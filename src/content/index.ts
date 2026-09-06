@@ -15,7 +15,7 @@ interface PageMeta {
   tags: string[];
 }
 
-function extractProblemFromPage(): PageMeta {
+export function extractProblemFromPage(): PageMeta {
   const pathname = window.location.pathname;
   const match = pathname.match(/\/problems\/([^/]+)/);
   const slug = match ? match[1] : '';
@@ -81,6 +81,28 @@ function extractProblemFromPage(): PageMeta {
   });
 
   return { slug, number: number || '0', title, difficulty, tags };
+}
+
+export function checkSubmissionAccepted(): boolean {
+  const resultLocator = document.querySelector('[data-e2e-locator="submission-result"]');
+  if (resultLocator) {
+    const text = (resultLocator.textContent || '').trim();
+    if (text === '通过' || text === 'Accepted' || text.startsWith('通过\n') || text.startsWith('Accepted\n')) {
+      return true;
+    }
+  }
+
+  const resultBadges = document.querySelectorAll(
+    '[class*="text-green"], [class*="text-olive"], [data-cypress*="submission"], [class*="status-success"]'
+  );
+  for (const el of resultBadges) {
+    const text = (el.textContent || '').trim();
+    if (text === '通过' || text === 'Accepted') {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 function isExtensionValid(): boolean {
@@ -582,29 +604,6 @@ function initCapsule(): void {
   }
 
   render();
-
-  // Accurate AC check that avoids false positives like "通过率" or "通过次数"
-  function checkSubmissionAccepted(): boolean {
-    const resultLocator = document.querySelector('[data-e2e-locator="submission-result"]');
-    if (resultLocator) {
-      const text = (resultLocator.textContent || '').trim();
-      if (text === '通过' || text === 'Accepted' || text.startsWith('通过\n') || text.startsWith('Accepted\n')) {
-        return true;
-      }
-    }
-
-    const resultBadges = document.querySelectorAll(
-      '[class*="text-green"], [class*="text-olive"], [data-cypress*="submission"], [class*="status-success"]'
-    );
-    for (const el of resultBadges) {
-      const text = (el.textContent || '').trim();
-      if (text === '通过' || text === 'Accepted') {
-        return true;
-      }
-    }
-
-    return false;
-  }
 
   // Watch for LeetCode Single Page App client-side route changes
   let lastUrl = window.location.href;

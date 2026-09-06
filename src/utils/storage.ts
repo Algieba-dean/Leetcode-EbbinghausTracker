@@ -161,9 +161,9 @@ export async function getProblems(): Promise<Problem[]> {
   // If this is the true first run (never initialized and no data stored)
   if (!isInitialized && problems === null) {
     await setItem(STORAGE_KEY_INITIALIZED, true);
-    await setItem(STORAGE_KEY_PROBLEMS, INITIAL_SAMPLE_PROBLEMS);
+    await setItem(STORAGE_KEY_PROBLEMS, [...INITIAL_SAMPLE_PROBLEMS]);
     notifyBadgeUpdate();
-    return INITIAL_SAMPLE_PROBLEMS;
+    return [...INITIAL_SAMPLE_PROBLEMS];
   }
 
   // Once initialized, user may intentionally have 0 problems ([]). Never auto-restore!
