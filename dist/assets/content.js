@@ -1,4 +1,4 @@
-import{g as S,G as v,a as A,D as _}from"./ebbinghaus-BQZyJPW5.js";const $="lc_ebbinghaus_problems",L="lc_ebbinghaus_settings";function q(){const d=window.location.pathname.match(/\/problems\/([^/]+)/),c=d?d[1]:"";let b="",n="",l="Medium";const f=["力扣"],t=document.title||"",w=/^(\d+)[\.\s、]+([^-—|]+)/,p=t.match(w);p&&(b=p[1].trim(),n=p[2].trim());const e=document.querySelector('div[data-cypress="QuestionTitle"]')||document.querySelector(".text-title-large")||document.querySelector("h4");if(e&&e.textContent){const o=e.textContent.trim(),r=o.match(/^(\d+)[\.\s、]+(.+)/);r?(b=r[1].trim(),n=r[2].trim()):n||(n=o)}!n&&c&&(n=c.split("-").map(o=>o.charAt(0).toUpperCase()+o.slice(1)).join(" "));const i=document.body.innerText||"",x=document.querySelector('.text-difficulty-easy, [class*="text-olive"]'),y=document.querySelector('.text-difficulty-hard, [class*="text-pink"]'),a=document.querySelector('.text-difficulty-medium, [class*="text-yellow"]');return x||i.includes("简单")||i.includes("Easy")?l="Easy":y||i.includes("困难")||i.includes("Hard")?l="Hard":(a||i.includes("中等")||i.includes("Medium"))&&(l="Medium"),document.querySelectorAll('a[href*="/tag/"]').forEach(o=>{var u;const r=(u=o.textContent)==null?void 0:u.trim();r&&!f.includes(r)&&f.push(r)}),{slug:c,number:b||"0",title:n,difficulty:l,tags:f}}async function h(){return new Promise(s=>{chrome.storage.local.get([$],d=>{s(d[$]||[])})})}async function N(){return new Promise(s=>{chrome.storage.local.get([L],d=>{const c=d[L];s((c==null?void 0:c.ladder)||_)})})}async function D(s){return new Promise(d=>{chrome.storage.local.set({[$]:s},()=>{chrome.runtime.sendMessage({type:"UPDATE_BADGE"}),d()})})}function C(){if(!window.location.pathname.includes("/problems/")||document.getElementById("lc-ebbinghaus-capsule-host"))return;const s=document.createElement("div");s.id="lc-ebbinghaus-capsule-host",s.style.cssText='position: fixed; bottom: 20px; right: 20px; z-index: 9999999; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;',document.body.appendChild(s);const d=s.attachShadow({mode:"open"}),c=document.createElement("style");c.textContent=`
+import{g as S,G as D,a as P,D as F}from"./ebbinghaus-BQZyJPW5.js";const A="lc_ebbinghaus_problems",R="lc_ebbinghaus_settings";function C(){const s=window.location.pathname.match(/\/problems\/([^/]+)/),l=s?s[1]:"";let u="",i="",g="Medium";const d=["力扣"],v=document.title||"",h=/^(\d+)[\.\s、]+([^-—|]+)/,w=v.match(h);w&&(u=w[1].trim(),i=w[2].trim());const t=document.querySelector('div[data-cypress="QuestionTitle"]')||document.querySelector(".text-title-large")||document.querySelector("h4");if(t&&t.textContent){const n=t.textContent.trim(),c=n.match(/^(\d+)[\.\s、]+(.+)/);c?(u=c[1].trim(),i=c[2].trim()):i||(i=n)}!i&&l&&(i=l.split("-").map(n=>n.charAt(0).toUpperCase()+n.slice(1)).join(" "));const p=document.body.innerText||"",o=document.querySelector('.text-difficulty-easy, [class*="text-olive"]'),e=document.querySelector('.text-difficulty-hard, [class*="text-pink"]'),f=document.querySelector('.text-difficulty-medium, [class*="text-yellow"]');return o||p.includes("简单")||p.includes("Easy")?g="Easy":e||p.includes("困难")||p.includes("Hard")?g="Hard":(f||p.includes("中等")||p.includes("Medium"))&&(g="Medium"),document.querySelectorAll('a[href*="/tag/"]').forEach(n=>{var a;const c=(a=n.textContent)==null?void 0:a.trim();c&&!d.includes(c)&&d.push(c)}),{slug:l,number:u||"0",title:i,difficulty:g,tags:d}}async function y(){return new Promise(r=>{chrome.storage.local.get([A],s=>{r(s[A]||[])})})}async function H(){return new Promise(r=>{chrome.storage.local.get([R],s=>{const l=s[R];r((l==null?void 0:l.ladder)||F)})})}async function $(r){return new Promise(s=>{chrome.storage.local.set({[A]:r},()=>{chrome.runtime.sendMessage({type:"UPDATE_BADGE"}),s()})})}function q(){if(!window.location.pathname.includes("/problems/")||document.getElementById("lc-ebbinghaus-capsule-host"))return;const r=document.createElement("div");r.id="lc-ebbinghaus-capsule-host",r.style.cssText='position: fixed; bottom: 20px; right: 20px; z-index: 9999999; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;',document.body.appendChild(r);const s=r.attachShadow({mode:"open"}),l=document.createElement("style");l.textContent=`
     * { box-sizing: border-box; margin: 0; padding: 0; }
     
     .capsule-btn {
@@ -41,7 +41,7 @@ import{g as S,G as v,a as A,D as _}from"./ebbinghaus-BQZyJPW5.js";const $="lc_eb
       position: absolute;
       bottom: 44px;
       right: 0;
-      width: 310px;
+      width: 320px;
       background: #0f172a;
       border: 1px solid #334155;
       border-radius: 12px;
@@ -132,7 +132,7 @@ import{g as S,G as v,a as A,D as _}from"./ebbinghaus-BQZyJPW5.js";const $="lc_eb
       align-items: center;
       justify-content: center;
       gap: 5px;
-      font-size: 11px;
+      font-size: 12px;
       transition: background 0.15s;
     }
     .add-action-btn:hover { background: #10b981; }
@@ -182,13 +182,29 @@ import{g as S,G as v,a as A,D as _}from"./ebbinghaus-BQZyJPW5.js";const $="lc_eb
       font-weight: 500;
       font-size: 11px;
     }
-  `,d.appendChild(c);const b=document.createElement("div");d.appendChild(b);let n=!1;async function l(){var x,y;const t=q();if(!t.slug)return;const w=await h(),p=await N(),e=w.find(a=>a.slug===t.slug||t.number!=="0"&&a.number===t.number);b.innerHTML="";const i=document.createElement("button");if(i.className=`capsule-btn ${n?"active":""}`,e){const a=S(),o=e.nextReviewDate<=a;i.innerHTML=`
-        <span class="pulse-dot ${o?"amber":""}"></span>
+
+    .auto-ac-banner {
+      background: rgba(16, 185, 129, 0.2);
+      border: 1px solid #10b981;
+      color: #34d399;
+      padding: 8px 10px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      font-size: 11px;
+      line-height: 1.4;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+  `,s.appendChild(l);const u=document.createElement("div");s.appendChild(u);let i=!1,g=!1;async function d(){var n,c;const t=C();if(!t.slug)return;const p=await y(),o=await H(),e=p.find(a=>a.slug===t.slug||t.number!=="0"&&a.number===t.number);u.innerHTML="";const f=document.createElement("button");if(f.className=`capsule-btn ${i?"active":""}`,e){const a=S(),b=e.nextReviewDate<=a;f.innerHTML=`
+        <span class="pulse-dot ${b?"amber":""}"></span>
         <span>🧠 艾宾浩斯: 第${e.repetition+1}阶 (${e.interval}d)</span>
-      `}else i.innerHTML=`
+      `}else f.innerHTML=`
         <span class="pulse-dot"></span>
-        <span>🧠 艾宾浩斯: + 纳入复习</span>
-      `;if(i.onclick=()=>{n=!n,l()},b.appendChild(i),n){const a=document.createElement("div");if(a.className="panel",e){const o=S(),r=e.lastReviewedDate===o;a.innerHTML=`
+        <span>🧠 艾宾浩斯: 一键收录</span>
+      `;if(f.onclick=()=>{i=!i,d()},u.appendChild(f),i){const a=document.createElement("div");if(a.className="panel",e){const b=S(),E=e.lastReviewedDate===b;a.innerHTML=`
+          ${g?'<div class="auto-ac-banner">🎉 检测到提交通过！已自动记录。</div>':""}
+
           <div class="panel-header">
             <div class="title-row">
               <span>🧠 艾宾浩斯复习</span>
@@ -206,27 +222,27 @@ import{g as S,G as v,a as A,D as _}from"./ebbinghaus-BQZyJPW5.js";const $="lc_eb
           <div class="meta-info">
             <div>当前阶段：<strong>第 ${e.repetition+1} 阶</strong> (间隔 ${e.interval} 天)</div>
             <div>下次复习：<strong>${e.nextReviewDate}</strong></div>
-            ${r?'<div style="color: #34d399; margin-top: 3px;">✅ 今日复习已打卡！</div>':'<div style="color: #f59e0b; margin-top: 3px;">⏱️ 今日待做题并评定</div>'}
+            ${E?'<div style="color: #34d399; margin-top: 3px;">✅ 今日复习已打卡！</div>':'<div style="color: #f59e0b; margin-top: 3px;">⏱️ 今日待做题并评定</div>'}
           </div>
 
-          ${r?'<div class="done-banner">🎉 今日掌握度已更新！</div>':`
-            <div style="font-size: 11px; color: #94a3b8; margin-bottom: 4px;">做完后根据记忆熟练度评定：</div>
+          ${E?'<div class="done-banner">🎉 记忆已刷新至下个周期！</div>':`
+            <div style="font-size: 11px; color: #94a3b8; margin-bottom: 4px;">做完后评定记忆熟练度：</div>
             <div class="btn-grid">
               <button class="rate-btn again" data-grade="1">
                 <div>重来</div>
-                <div style="font-size: 9px; opacity: 0.75;">${v[1].getNextDays(e.repetition,e.interval,p)}</div>
+                <div style="font-size: 9px; opacity: 0.75;">${D[1].getNextDays(e.repetition,e.interval,o)}</div>
               </button>
               <button class="rate-btn hard" data-grade="2">
                 <div>困难</div>
-                <div style="font-size: 9px; opacity: 0.75;">${v[2].getNextDays(e.repetition,e.interval,p)}</div>
+                <div style="font-size: 9px; opacity: 0.75;">${D[2].getNextDays(e.repetition,e.interval,o)}</div>
               </button>
               <button class="rate-btn good" data-grade="3">
                 <div>良好</div>
-                <div style="font-size: 9px; opacity: 0.75;">${v[3].getNextDays(e.repetition,e.interval,p)}</div>
+                <div style="font-size: 9px; opacity: 0.75;">${D[3].getNextDays(e.repetition,e.interval,o)}</div>
               </button>
               <button class="rate-btn easy" data-grade="4">
                 <div>简单</div>
-                <div style="font-size: 9px; opacity: 0.75;">${v[4].getNextDays(e.repetition,e.interval,p)}</div>
+                <div style="font-size: 9px; opacity: 0.75;">${D[4].getNextDays(e.repetition,e.interval,o)}</div>
               </button>
             </div>
           `}
@@ -235,7 +251,7 @@ import{g as S,G as v,a as A,D as _}from"./ebbinghaus-BQZyJPW5.js";const $="lc_eb
             <span style="color: #64748b;">艾宾浩斯跟踪中</span>
             <button id="capsule-remove-btn" class="del-btn">从复习库移除此题</button>
           </div>
-        `,a.querySelectorAll(".rate-btn").forEach(u=>{u.addEventListener("click",async m=>{const E=m.currentTarget,z=Number(E.dataset.grade),g=A(e,z,o,p),M={...e,repetition:g.repetition,interval:g.interval,easeFactor:g.easeFactor,nextReviewDate:g.nextReviewDate,lastReviewedDate:o,history:[{id:`log-${Date.now()}`,timestamp:Date.now(),date:o,grade:z,intervalDays:g.interval,repetition:g.repetition,easeFactor:g.easeFactor},...e.history||[]]},k=await h(),T=k.findIndex(R=>R.id===e.id);T>=0&&(k[T]=M),await D(k),l()})}),(x=a.querySelector("#capsule-remove-btn"))==null||x.addEventListener("click",async()=>{if(confirm(`确定从艾宾浩斯复习库中移除题目 #${e.number} ${e.title} 吗？`)){const m=(await h()).filter(E=>E.id!==e.id);await D(m),l()}})}else a.innerHTML=`
+        `,a.querySelectorAll(".rate-btn").forEach(k=>{k.addEventListener("click",async x=>{const z=x.currentTarget,L=Number(z.dataset.grade),m=P(e,L,b,o),_={...e,repetition:m.repetition,interval:m.interval,easeFactor:m.easeFactor,nextReviewDate:m.nextReviewDate,lastReviewedDate:b,history:[{id:`log-${Date.now()}`,timestamp:Date.now(),date:b,grade:L,intervalDays:m.interval,repetition:m.repetition,easeFactor:m.easeFactor},...e.history||[]]},T=await y(),M=T.findIndex(N=>N.id===e.id);M>=0&&(T[M]=_),await $(T),d()})}),(n=a.querySelector("#capsule-remove-btn"))==null||n.addEventListener("click",async()=>{if(confirm(`确定从艾宾浩斯复习库中移除题目 #${e.number} ${e.title} 吗？`)){const x=(await y()).filter(z=>z.id!==e.id);await $(x),d()}})}else a.innerHTML=`
           <div class="panel-header">
             <div class="title-row">
               <span>🧠 艾宾浩斯复习计划</span>
@@ -251,12 +267,12 @@ import{g as S,G as v,a as A,D as _}from"./ebbinghaus-BQZyJPW5.js";const $="lc_eb
           </div>
 
           <p style="color: #94a3b8; font-size: 11px; margin-bottom: 8px; line-height: 1.4;">
-            将此题纳入间隔重复复习库。明天起将按照艾宾浩斯遗忘曲线（1d ➔ 2d ➔ 4d ➔ 7d...）准时提醒您二刷三刷！
+            已自动识别题目信息。点击下方按钮即可一键纳入，明天准时开启第 1 轮复习！
           </p>
 
-          <textarea id="capsule-notes-input" class="textarea-notes" placeholder="记录核心破局思路或易错点卡片 (选填)..."></textarea>
+          <textarea id="capsule-notes-input" class="textarea-notes" placeholder="关键解题思路或易错点卡片 (选填)..."></textarea>
 
           <button id="capsule-submit-add" class="add-action-btn">
-            <span>🚀 纳入艾宾浩斯复习计划</span>
+            <span>🚀 一键纳入艾宾浩斯复习</span>
           </button>
-        `,(y=a.querySelector("#capsule-submit-add"))==null||y.addEventListener("click",async()=>{const o=a.querySelector("#capsule-notes-input"),r=o?o.value.trim():"",u={id:`lc-${t.slug||Date.now()}`,number:t.number,title:t.title||t.slug,slug:t.slug,url:window.location.href,difficulty:t.difficulty,tags:t.tags,notes:r,createdAt:Date.now(),repetition:0,interval:1,easeFactor:2.5,nextReviewDate:S(),isSample:!1,history:[]},m=await h();m.unshift(u),await D(m),l()});b.appendChild(a)}}l();let f=window.location.href;setInterval(()=>{window.location.href!==f&&(f=window.location.href,l())},1200)}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",C):C();
+        `,(c=a.querySelector("#capsule-submit-add"))==null||c.addEventListener("click",async()=>{const b=a.querySelector("#capsule-notes-input"),E=b?b.value.trim():"",k={id:`lc-${t.slug||Date.now()}`,number:t.number,title:t.title||t.slug,slug:t.slug,url:window.location.href,difficulty:t.difficulty,tags:t.tags,notes:E,createdAt:Date.now(),repetition:0,interval:1,easeFactor:2.5,nextReviewDate:S(),isSample:!1,history:[]},x=await y();x.unshift(k),await $(x),d()});u.appendChild(a)}}d();let v=window.location.href;setInterval(()=>{window.location.href!==v&&(v=window.location.href,g=!1,d())},1200);let h=!1;new MutationObserver(async()=>{const t=document.body.innerText||"";if((t.includes("通过")||t.includes("Accepted")||!!document.querySelector('[data-e2e-locator="submission-result"]'))&&!h){h=!0;const o=C();if(o.slug){const e=await y();if(!e.find(n=>n.slug===o.slug)){const n={id:`lc-${o.slug||Date.now()}`,number:o.number,title:o.title||o.slug,slug:o.slug,url:window.location.href,difficulty:o.difficulty,tags:o.tags,notes:"做题自动通过收录",createdAt:Date.now(),repetition:0,interval:1,easeFactor:2.5,nextReviewDate:S(),isSample:!1,history:[]};e.unshift(n),await $(e),g=!0,i=!0,d()}}}}).observe(document.body,{childList:!0,subtree:!0})}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",q):q();

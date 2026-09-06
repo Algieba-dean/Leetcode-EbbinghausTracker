@@ -110,7 +110,6 @@ async function saveStoredProblems(list: Problem[]): Promise<void> {
 }
 
 function initCapsule(): void {
-  // Only run on actual problem detail pages
   if (!window.location.pathname.includes('/problems/')) return;
   if (document.getElementById('lc-ebbinghaus-capsule-host')) return;
 
@@ -166,7 +165,7 @@ function initCapsule(): void {
       position: absolute;
       bottom: 44px;
       right: 0;
-      width: 310px;
+      width: 320px;
       background: #0f172a;
       border: 1px solid #334155;
       border-radius: 12px;
@@ -257,7 +256,7 @@ function initCapsule(): void {
       align-items: center;
       justify-content: center;
       gap: 5px;
-      font-size: 11px;
+      font-size: 12px;
       transition: background 0.15s;
     }
     .add-action-btn:hover { background: #10b981; }
@@ -307,6 +306,20 @@ function initCapsule(): void {
       font-weight: 500;
       font-size: 11px;
     }
+
+    .auto-ac-banner {
+      background: rgba(16, 185, 129, 0.2);
+      border: 1px solid #10b981;
+      color: #34d399;
+      padding: 8px 10px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      font-size: 11px;
+      line-height: 1.4;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
   `;
   shadow.appendChild(style);
 
@@ -314,6 +327,7 @@ function initCapsule(): void {
   shadow.appendChild(wrapper);
 
   let isExpanded = false;
+  let autoAcNotified = false;
 
   async function render() {
     const meta = extractProblemFromPage();
@@ -341,7 +355,7 @@ function initCapsule(): void {
     } else {
       pill.innerHTML = `
         <span class="pulse-dot"></span>
-        <span>🧠 艾宾浩斯: + 纳入复习</span>
+        <span>🧠 艾宾浩斯: 一键收录</span>
       `;
     }
 
@@ -361,6 +375,8 @@ function initCapsule(): void {
         const isReviewedToday = existing.lastReviewedDate === today;
 
         panel.innerHTML = `
+          ${autoAcNotified ? `<div class="auto-ac-banner">🎉 检测到提交通过！已自动记录。</div>` : ''}
+
           <div class="panel-header">
             <div class="title-row">
               <span>🧠 艾宾浩斯复习</span>
@@ -383,9 +399,9 @@ function initCapsule(): void {
 
           ${
             isReviewedToday
-              ? `<div class="done-banner">🎉 今日掌握度已更新！</div>`
+              ? `<div class="done-banner">🎉 记忆已刷新至下个周期！</div>`
               : `
-            <div style="font-size: 11px; color: #94a3b8; margin-bottom: 4px;">做完后根据记忆熟练度评定：</div>
+            <div style="font-size: 11px; color: #94a3b8; margin-bottom: 4px;">做完后评定记忆熟练度：</div>
             <div class="btn-grid">
               <button class="rate-btn again" data-grade="1">
                 <div>重来</div>
@@ -413,7 +429,6 @@ function initCapsule(): void {
           </div>
         `;
 
-        // Bind rating clicks
         panel.querySelectorAll('.rate-btn').forEach((btn) => {
           btn.addEventListener('click', async (e) => {
             const btnEl = e.currentTarget as HTMLElement;
@@ -449,7 +464,6 @@ function initCapsule(): void {
           });
         });
 
-        // Bind delete click directly on LeetCode page!
         panel.querySelector('#capsule-remove-btn')?.addEventListener('click', async () => {
           if (confirm(`确定从艾宾浩斯复习库中移除题目 #${existing.number} ${existing.title} 吗？`)) {
             const list = await getStoredProblems();
@@ -459,7 +473,7 @@ function initCapsule(): void {
           }
         });
       } else {
-        // Not tracked: Show Add Form
+        // Not tracked: Instant One-Click Add
         panel.innerHTML = `
           <div class="panel-header">
             <div class="title-row">
@@ -476,13 +490,13 @@ function initCapsule(): void {
           </div>
 
           <p style="color: #94a3b8; font-size: 11px; margin-bottom: 8px; line-height: 1.4;">
-            将此题纳入间隔重复复习库。明天起将按照艾宾浩斯遗忘曲线（1d ➔ 2d ➔ 4d ➔ 7d...）准时提醒您二刷三刷！
+            已自动识别题目信息。点击下方按钮即可一键纳入，明天准时开启第 1 轮复习！
           </p>
 
-          <textarea id="capsule-notes-input" class="textarea-notes" placeholder="记录核心破局思路或易错点卡片 (选填)..."></textarea>
+          <textarea id="capsule-notes-input" class="textarea-notes" placeholder="关键解题思路或易错点卡片 (选填)..."></textarea>
 
           <button id="capsule-submit-add" class="add-action-btn">
-            <span>🚀 纳入艾宾浩斯复习计划</span>
+            <span>🚀 一键纳入艾宾浩斯复习</span>
           </button>
         `;
 
@@ -503,7 +517,7 @@ function initCapsule(): void {
             repetition: 0,
             interval: 1, // 1st stage
             easeFactor: 2.5,
-            nextReviewDate: getTodayString(), // due today or tomorrow
+            nextReviewDate: getTodayString(),
             isSample: false,
             history: [],
           };
@@ -526,9 +540,56 @@ function initCapsule(): void {
   setInterval(() => {
     if (window.location.href !== lastUrl) {
       lastUrl = window.location.href;
+      autoAcNotified = false;
       render();
     }
   }, 1200);
+
+  // Auto AC (Accepted / 通过) Detection via MutationObserver
+  let acHandled = false;
+  const observer = new MutationObserver(async () => {
+    const text = document.body.innerText || '';
+    const hasAccepted =
+      text.includes('通过') ||
+      text.includes('Accepted') ||
+      !!document.querySelector('[data-e2e-locator="submission-result"]');
+
+    if (hasAccepted && !acHandled) {
+      acHandled = true;
+      const meta = extractProblemFromPage();
+      if (meta.slug) {
+        const list = await getStoredProblems();
+        const existing = list.find((p) => p.slug === meta.slug);
+        if (!existing) {
+          // Auto add on AC!
+          const newProblem: Problem = {
+            id: `lc-${meta.slug || Date.now()}`,
+            number: meta.number || '0',
+            title: meta.title || meta.slug,
+            slug: meta.slug,
+            url: window.location.href,
+            difficulty: meta.difficulty,
+            tags: meta.tags,
+            notes: '做题自动通过收录',
+            createdAt: Date.now(),
+            repetition: 0,
+            interval: 1,
+            easeFactor: 2.5,
+            nextReviewDate: getTodayString(),
+            isSample: false,
+            history: [],
+          };
+          list.unshift(newProblem);
+          await saveStoredProblems(list);
+          autoAcNotified = true;
+          isExpanded = true;
+          render();
+        }
+      }
+    }
+  });
+
+  observer.observe(document.body, { childList: true, subtree: true });
 }
 
 if (document.readyState === 'loading') {
