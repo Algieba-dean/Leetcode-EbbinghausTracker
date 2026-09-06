@@ -9,6 +9,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   showLeetCodeFloatingWidget: true,
   theme: 'dark',
   ladder: DEFAULT_EBBINGHAUS_LADDER,
+  language: 'system',
 };
 
 function isChromeStorageAvailable(): boolean {

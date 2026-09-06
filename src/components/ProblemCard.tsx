@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Problem, ReviewGrade } from '../types';
-import { GRADE_CONFIG, calculateRetentionRate, diffDays, getTodayString } from '../utils/ebbinghaus';
+import { calculateRetentionRate, diffDays, getTodayString } from '../utils/ebbinghaus';
 import { isSampleProblem } from '../utils/storage';
 import { ExternalLink, Lightbulb, ChevronDown, ChevronUp, Sparkles, Check, Trash2 } from 'lucide-react';
+import { useI18n, getLocalizedGradeMeta } from '../utils/i18n';
 
 interface ProblemCardProps {
   problem: Problem;
@@ -19,6 +20,7 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
   showActions = true,
   ladder,
 }) => {
+  const { t, lang } = useI18n();
   const [showNotes, setShowNotes] = useState(false);
   const [ratedGrade, setRatedGrade] = useState<ReviewGrade | null>(null);
 
@@ -63,8 +65,8 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
             <button
               onClick={openLeetCode}
               className="text-xs font-semibold text-slate-100 hover:text-emerald-400 transition-colors text-left flex items-center gap-1 group/btn"
-              title="在力扣中打开"
-              aria-label={`在力扣中打开题目 #${problem.number} ${problem.title}`}
+              title={t('card.openLeetCode')}
+              aria-label={t('card.openLeetCodeAria', { number: problem.number, title: problem.title })}
             >
               <span>{problem.title}</span>
               <ExternalLink className="w-3 h-3 text-slate-500 group-hover/btn:text-emerald-400 transition-colors" />
@@ -82,24 +84,24 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
 
             {isOverdue ? (
               <span className="px-1.5 py-0.5 text-[10px] font-mono font-medium rounded bg-rose-500/15 text-rose-300 border border-rose-500/30">
-                超期 {daysOverdue} 天
+                {t('card.overdue', { days: daysOverdue })}
               </span>
             ) : (
               <span className="px-1.5 py-0.5 text-[10px] font-mono font-medium rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
-                今日到期
+                {t('card.dueToday')}
               </span>
             )}
 
             {onDelete && (
               <button
                 onClick={() => {
-                  if (confirm(`确定从艾宾浩斯复习库中删除题目 #${problem.number} ${problem.title} 吗？`)) {
+                  if (confirm(t('card.deleteConfirm', { number: problem.number, title: problem.title }))) {
                     onDelete(problem.id);
                   }
                 }}
                 className="opacity-0 group-hover:opacity-100 p-1.5 min-w-[28px] min-h-[28px] flex items-center justify-center text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all rounded focus-visible:opacity-100"
-                title="删除此题"
-                aria-label={`从艾宾浩斯复习库中删除题目 #${problem.number} ${problem.title}`}
+                title={t('card.deleteTooltip')}
+                aria-label={t('card.deleteAria', { number: problem.number, title: problem.title })}
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
@@ -116,18 +118,18 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
             ))}
             {isSampleProblem(problem) && (
               <span className="px-1 py-0.2 rounded bg-slate-800 text-slate-400 text-[9px] border border-slate-700/50">
-                示例
+                {t('card.sampleBadge')}
               </span>
             )}
           </div>
 
           <div className="flex items-center gap-2 font-mono text-[10px] text-slate-400">
-            <span>阶段 <strong className="text-slate-200">第 {problem.repetition + 1} 阶</strong></span>
+            <span>{t('card.stage', { stage: problem.repetition + 1 })}</span>
             <span>·</span>
-            <span>间隔 <strong className="text-slate-200">{problem.interval}d</strong></span>
+            <span>{t('card.interval', { interval: problem.interval })}</span>
             <span>·</span>
-            <span title="预估记忆强度">
-              留存 <strong className={retention > 70 ? 'text-emerald-400' : retention > 40 ? 'text-amber-400' : 'text-rose-400'}>{retention}%</strong>
+            <span title={t('card.retentionTooltip')}>
+              {t('card.retention', { rate: retention })}
             </span>
           </div>
         </div>
@@ -137,12 +139,12 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
             <button
               onClick={() => setShowNotes(!showNotes)}
               aria-expanded={showNotes}
-              aria-label={showNotes ? "收起解题思路卡片" : "查看解题思路卡片"}
+              aria-label={showNotes ? t('card.notesAriaCollapse') : t('card.notesAriaExpand')}
               className="w-full flex items-center justify-between text-[11px] text-slate-400 hover:text-slate-200 transition-colors py-0.5 rounded focus-visible:ring-1 focus-visible:ring-emerald-500"
             >
               <span className="flex items-center gap-1 text-amber-400/90 font-medium">
                 <Lightbulb className="w-3 h-3" />
-                <span>解题思路卡片</span>
+                <span>{t('card.notesTitle')}</span>
               </span>
               {showNotes ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
             </button>
@@ -160,14 +162,13 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
         <div className="bg-slate-950/90 px-3 py-2 border-t border-slate-800 flex items-center justify-between gap-1.5 select-none">
           <span className="text-[10px] text-slate-400 font-medium shrink-0 flex items-center gap-1">
             <Sparkles className="w-3 h-3 text-slate-500" />
-            掌握度反馈:
+            {t('card.feedbackLabel')}
           </span>
 
           <div className="grid grid-cols-4 gap-1.5 flex-1">
             {([1, 2, 3, 4] as ReviewGrade[]).map((grade) => {
-              const meta = GRADE_CONFIG[grade];
+              const meta = getLocalizedGradeMeta(grade, problem.repetition, problem.interval, ladder, lang);
               const isSelected = ratedGrade === grade;
-              const nextDays = meta.getNextDays(problem.repetition, problem.interval, ladder);
 
               const gradeColors = {
                 1: 'hover:bg-rose-500/20 hover:text-rose-200 text-rose-300 border-rose-500/30 bg-rose-500/10',
@@ -183,14 +184,14 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
                   className={`py-1 px-1 rounded border text-center transition-all focus-visible:ring-2 focus-visible:ring-white ${gradeColors} ${
                     isSelected ? 'ring-2 ring-white font-bold' : ''
                   }`}
-                  title={`${meta.name} - ${meta.sub} (${nextDays})`}
-                  aria-label={`掌握度评定为${meta.name}（${meta.sub}），下次复习将在${nextDays}`}
+                  title={`${meta.name} - ${meta.sub} (${meta.nextDays})`}
+                  aria-label={t('card.gradeAria', { name: meta.name, sub: meta.sub, days: meta.nextDays })}
                 >
                   <div className="text-[11px] font-medium flex items-center justify-center gap-0.5">
                     {isSelected && <Check className="w-2.5 h-2.5" />}
                     {meta.name}
                   </div>
-                  <div className="text-[9px] opacity-75 font-mono">{nextDays}</div>
+                  <div className="text-[9px] opacity-75 font-mono">{meta.nextDays}</div>
                 </button>
               );
             })}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Download, Upload, RotateCcw, Check, Trash2, Sliders } from 'lucide-react';
+import { X, Download, Upload, RotateCcw, Check, Trash2, Sliders, Globe } from 'lucide-react';
 import {
   exportDataJson,
   importDataJson,
@@ -11,7 +11,8 @@ import {
   saveSettings,
 } from '../utils/storage';
 import { DEFAULT_EBBINGHAUS_LADDER } from '../utils/ebbinghaus';
-import { UserSettings } from '../types';
+import { UserSettings, Language } from '../types';
+import { useI18n } from '../utils/i18n';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -24,6 +25,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onClose,
   onDataChanged,
 }) => {
+  const { t } = useI18n();
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [ladderInput, setLadderInput] = useState('');
@@ -40,6 +42,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   if (!isOpen || !settings) return null;
 
+  const handleLanguageChange = async (newLang: Language) => {
+    const newSettings: UserSettings = {
+      ...settings,
+      language: newLang,
+    };
+    await saveSettings(newSettings);
+    setSettings(newSettings);
+    onDataChanged();
+  };
+
   const handleExport = async () => {
     const jsonStr = await exportDataJson();
     const blob = new Blob([jsonStr], { type: 'application/json' });
@@ -49,7 +61,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     a.download = `leetcode-ebbinghaus-backup-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    setStatusMsg('数据已成功导出为 JSON 文件！');
+    setStatusMsg(t('settings.exportSuccess'));
   };
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -61,10 +73,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       const content = event.target?.result as string;
       const ok = await importDataJson(content);
       if (ok) {
-        setStatusMsg('题库备份导入成功！');
+        setStatusMsg(t('settings.importSuccess'));
         onDataChanged();
       } else {
-        setStatusMsg('导入失败：JSON 格式不正确');
+        setStatusMsg(t('settings.importFailed'));
       }
     };
     reader.readAsText(file);
@@ -77,7 +89,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       .filter((n) => !isNaN(n) && n > 0);
 
     if (numbers.length < 2) {
-      setStatusMsg('阶梯至少需要包含 2 个递增天数！');
+      setStatusMsg(t('settings.ladderError'));
       return;
     }
 
@@ -87,7 +99,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     };
     await saveSettings(newSettings);
     setSettings(newSettings);
-    setStatusMsg(`已更新艾宾浩斯复习阶梯: [${numbers.join(', ')}] 天`);
+    setStatusMsg(t('settings.ladderSaved', { ladder: numbers.join(', ') }));
     onDataChanged();
   };
 
@@ -99,37 +111,37 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     await saveSettings(newSettings);
     setSettings(newSettings);
     setLadderInput(DEFAULT_EBBINGHAUS_LADDER.join(', '));
-    setStatusMsg('已恢复默认标准阶梯：[1, 2, 4, 7, 15, 30, 60, 120] 天');
+    setStatusMsg(t('settings.ladderRestored'));
     onDataChanged();
   };
 
   const handleClearSample = async () => {
-    if (confirm('确定清除预设的示例题目吗？(您自己添加的题目将被保留)')) {
+    if (confirm(t('settings.clearSampleConfirm'))) {
       const removedCount = await clearSampleProblems();
       await onDataChanged();
       if (removedCount > 0) {
-        setStatusMsg(`已成功清除 ${removedCount} 道初始预置示例题目！`);
+        setStatusMsg(t('settings.clearSampleSuccess', { count: removedCount }));
       } else {
-        setStatusMsg('题库中没有检测到预设的示例题目。');
+        setStatusMsg(t('settings.clearSampleNone'));
       }
     }
   };
 
   const handleClearAll = async () => {
-    if (confirm('⚠️ 警告：确定清空全部题库吗？该操作不可撤销，建议先导出备份！')) {
+    if (confirm(t('settings.clearAllConfirm'))) {
       await clearAllProblems();
       await onDataChanged();
-      setStatusMsg('题库已全部清空！');
+      setStatusMsg(t('settings.clearAllSuccess'));
     }
   };
 
   const handleResetSample = async () => {
-    if (confirm('是否重新加载默认演示题目数据？')) {
+    if (confirm(t('settings.reloadSampleConfirm'))) {
       for (const p of INITIAL_SAMPLE_PROBLEMS) {
         await saveProblem(p);
       }
       await onDataChanged();
-      setStatusMsg('已载入演示数据！');
+      setStatusMsg(t('settings.reloadSampleSuccess'));
     }
   };
 
@@ -142,10 +154,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     >
       <div className="bg-slate-900 border border-slate-700 rounded-xl w-full max-w-[370px] overflow-hidden shadow-soft max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 shrink-0">
-          <h2 id="settings-modal-title" className="text-xs font-semibold text-slate-100">复习算法设置与数据管理</h2>
+          <h2 id="settings-modal-title" className="text-xs font-semibold text-slate-100">{t('settings.title')}</h2>
           <button
             onClick={onClose}
-            aria-label="关闭设置窗口"
+            aria-label={t('settings.closeAria')}
             className="text-slate-400 hover:text-white transition-colors rounded p-1 focus-visible:ring-2 focus-visible:ring-emerald-500"
           >
             <X className="w-4 h-4" />
@@ -160,55 +172,88 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           )}
 
+          {/* Language Switcher */}
+          <div className="space-y-2 bg-slate-950/70 p-2.5 rounded-lg border border-slate-800">
+            <span className="font-semibold text-slate-200 flex items-center gap-1.5 text-xs">
+              <Globe className="w-3.5 h-3.5 text-sky-400" />
+              {t('settings.languageSection')}
+            </span>
+            <div className="grid grid-cols-3 gap-1.5 pt-1">
+              {(
+                [
+                  { id: 'system', label: t('settings.langSystem') },
+                  { id: 'zh', label: t('settings.langZh') },
+                  { id: 'en', label: t('settings.langEn') },
+                ] as const
+              ).map((opt) => {
+                const isSelected = settings.language === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => handleLanguageChange(opt.id)}
+                    className={`py-1.5 px-1 rounded border text-center text-[11px] font-medium transition-colors ${
+                      isSelected
+                        ? 'bg-sky-500/20 text-sky-300 border-sky-500/40 font-semibold'
+                        : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Ebbinghaus Ladder Setting */}
           <div className="space-y-2 bg-slate-950/70 p-2.5 rounded-lg border border-slate-800">
             <div className="flex items-center justify-between">
               <span className="font-semibold text-slate-200 flex items-center gap-1.5 text-xs">
                 <Sliders className="w-3.5 h-3.5 text-emerald-400" />
-                艾宾浩斯复习阶梯 (天数序列)
+                {t('settings.ladderTitle')}
               </span>
               <button
                 onClick={handleResetLadder}
                 className="text-[10px] text-slate-400 hover:text-emerald-400 underline"
               >
-                恢复标准
+                {t('settings.ladderReset')}
               </button>
             </div>
             <p className="text-[11px] text-slate-400 leading-relaxed">
-              每次良好(Good)解答稳步前进1阶，秒杀(Easy)跳跃2阶，完全遗忘(Again)退回第1阶。
+              {t('settings.ladderDesc')}
             </p>
             <div className="flex items-center gap-1.5 pt-1">
               <input
                 type="text"
                 value={ladderInput}
                 onChange={(e) => setLadderInput(e.target.value)}
-                placeholder="例如 1, 2, 4, 7, 15, 30, 60, 120"
+                placeholder={t('settings.ladderPlaceholder')}
                 className="flex-1 bg-slate-900 border border-slate-700 rounded px-2.5 py-1 text-slate-200 font-mono text-[11px] focus:outline-none focus:border-emerald-500"
               />
               <button
                 onClick={handleSaveLadder}
                 className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-medium text-[11px] transition-colors"
               >
-                保存
+                {t('settings.ladderSave')}
               </button>
             </div>
           </div>
 
           {/* Data Export / Import */}
           <div className="space-y-2">
-            <h3 className="text-slate-400 font-medium text-[11px]">数据备份与迁移</h3>
+            <h3 className="text-slate-400 font-medium text-[11px]">{t('settings.backupTitle')}</h3>
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={handleExport}
                 className="p-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center gap-1.5 border border-slate-700/60 transition-colors"
               >
                 <Download className="w-3.5 h-3.5 text-emerald-400" />
-                <span>导出题库备份</span>
+                <span>{t('settings.exportBtn')}</span>
               </button>
 
               <label className="p-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center gap-1.5 border border-slate-700/60 transition-colors cursor-pointer">
                 <Upload className="w-3.5 h-3.5 text-sky-400" />
-                <span>导入备份文件</span>
+                <span>{t('settings.importBtn')}</span>
                 <input type="file" accept=".json" onChange={handleImport} className="hidden" />
               </label>
             </div>
@@ -216,14 +261,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
           {/* Problem Cleanups & Initial Data */}
           <div className="space-y-2 pt-2 border-t border-slate-800">
-            <h3 className="text-slate-400 font-medium text-[11px]">题库管理与重置</h3>
+            <h3 className="text-slate-400 font-medium text-[11px]">{t('settings.manageTitle')}</h3>
             <div className="flex flex-col gap-1.5">
               <button
                 onClick={handleClearSample}
                 className="w-full p-2 rounded bg-slate-800/80 hover:bg-slate-800 text-slate-300 flex items-center justify-center gap-1.5 border border-slate-700/40 text-xs transition-colors"
               >
                 <Trash2 className="w-3.5 h-3.5 text-amber-400" />
-                <span>一键移除预置示例题目 (保留自选题)</span>
+                <span>{t('settings.clearSampleBtn')}</span>
               </button>
 
               <button
@@ -231,7 +276,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 className="w-full p-2 rounded bg-slate-800/60 hover:bg-slate-800 text-slate-400 hover:text-slate-300 flex items-center justify-center gap-1.5 border border-slate-700/30 text-xs transition-colors"
               >
                 <RotateCcw className="w-3.5 h-3.5 text-slate-400" />
-                <span>重新载入初始示例题目</span>
+                <span>{t('settings.reloadSampleBtn')}</span>
               </button>
 
               <button
@@ -239,7 +284,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 className="w-full p-2 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 flex items-center justify-center gap-1.5 border border-rose-500/20 text-xs transition-colors mt-1"
               >
                 <Trash2 className="w-3.5 h-3.5 text-rose-400" />
-                <span>清空全部题目数据</span>
+                <span>{t('settings.clearAllBtn')}</span>
               </button>
             </div>
           </div>

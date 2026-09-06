@@ -36,11 +36,14 @@ export interface Problem {
   history: ReviewLog[];
 }
 
+export type Language = 'zh' | 'en' | 'system';
+
 export interface UserSettings {
   dailyTarget: number;
   showLeetCodeFloatingWidget: boolean;
   theme: 'dark' | 'light' | 'system';
   ladder: number[]; // 艾宾浩斯周期阶梯 [1, 2, 4, 7, 15, 30, 60, 120]
+  language: Language;
 }
 
 export interface DailySummary {

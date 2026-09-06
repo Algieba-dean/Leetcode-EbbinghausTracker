@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Problem, Difficulty, ReviewGrade } from '../types';
 import { ProblemCard } from './ProblemCard';
 import { Search, Trash2, ArrowUpDown } from 'lucide-react';
+import { useI18n } from '../utils/i18n';
 
 interface ProblemLibraryProps {
   problems: Problem[];
@@ -14,6 +15,7 @@ export const ProblemLibrary: React.FC<ProblemLibraryProps> = ({
   onRate,
   onDeleteProblem,
 }) => {
+  const { t } = useI18n();
   const [search, setSearch] = useState('');
   const [difficultyFilter, setDifficultyFilter] = useState<'All' | Difficulty>('All');
   const [sortBy, setSortBy] = useState<'nextDate' | 'number' | 'repetition'>('nextDate');
@@ -54,14 +56,14 @@ export const ProblemLibrary: React.FC<ProblemLibraryProps> = ({
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="搜索题号、题目名、算法标签..."
-            aria-label="搜索题号、题目名或算法标签"
+            placeholder={t('library.searchPlaceholder')}
+            aria-label={t('library.searchAria')}
             className="w-full bg-slate-900 border border-slate-700/80 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus-visible:ring-1 focus-visible:ring-emerald-500 transition-colors"
           />
         </div>
 
         <div className="flex items-center justify-between text-xs gap-2">
-          <div className="flex items-center gap-1" role="group" aria-label="按难度筛选">
+          <div className="flex items-center gap-1" role="group" aria-label={t('library.filterDiffAria')}>
             {(['All', 'Easy', 'Medium', 'Hard'] as const).map((diff) => (
               <button
                 key={diff}
@@ -73,7 +75,7 @@ export const ProblemLibrary: React.FC<ProblemLibraryProps> = ({
                     : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
                 }`}
               >
-                {diff === 'All' ? '全部' : diff}
+                {diff === 'All' ? t('library.filterAll') : diff}
               </button>
             ))}
           </div>
@@ -83,31 +85,31 @@ export const ProblemLibrary: React.FC<ProblemLibraryProps> = ({
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              aria-label="题目排序规则"
+              aria-label={t('library.sortAria')}
               className="bg-slate-900 border border-slate-800 rounded px-1.5 py-0.5 text-[11px] text-slate-300 focus:outline-none focus:border-emerald-500 focus-visible:ring-1 focus-visible:ring-emerald-500"
             >
-              <option value="nextDate">下次复习</option>
-              <option value="number">力扣题号</option>
-              <option value="repetition">复习轮次</option>
+              <option value="nextDate">{t('library.sortNextDate')}</option>
+              <option value="number">{t('library.sortNumber')}</option>
+              <option value="repetition">{t('library.sortRepetition')}</option>
             </select>
           </div>
         </div>
       </div>
 
       <div className="text-[11px] text-slate-500 flex items-center justify-between">
-        <span>共匹配 {filtered.length} 道题目</span>
+        <span>{t('library.matchCount', { count: filtered.length })}</span>
       </div>
 
       {problems.length === 0 ? (
         <div className="py-12 text-center text-slate-400 text-xs px-4 bg-slate-900/40 rounded-xl border border-slate-800/80">
-          <p className="font-semibold text-slate-200 mb-1.5">题库当前已清空（0 道题）</p>
+          <p className="font-semibold text-slate-200 mb-1.5">{t('library.emptyLibraryTitle')}</p>
           <p className="text-slate-400 leading-relaxed text-[11px]">
-            你已清除所有题目。可以在力扣网页右下角点击悬浮胶囊一键收录，或点击右上角「+ 录入题目」添加新题！
+            {t('library.emptyLibraryDesc')}
           </p>
         </div>
       ) : filtered.length === 0 ? (
         <div className="py-10 text-center text-slate-500 text-xs">
-          没有找到匹配的题目
+          {t('library.noMatch')}
         </div>
       ) : (
         <div className="space-y-2.5">
@@ -115,19 +117,19 @@ export const ProblemLibrary: React.FC<ProblemLibraryProps> = ({
             <div key={problem.id} className="relative group">
               <ProblemCard problem={problem} onRate={onRate} onDelete={onDeleteProblem} showActions={true} />
               <div className="flex items-center justify-between mt-1 px-1 text-[10px] text-slate-500 font-mono">
-                <span>下次: {problem.nextReviewDate}</span>
+                <span>{t('library.nextLabel', { date: problem.nextReviewDate })}</span>
                 <button
                   onClick={() => {
-                    if (confirm(`确定从记忆库中删除题目 #${problem.number} ${problem.title} 吗？`)) {
+                    if (confirm(t('library.deleteConfirm', { number: problem.number, title: problem.title }))) {
                       onDeleteProblem(problem.id);
                     }
                   }}
                   className="opacity-0 group-hover:opacity-100 text-rose-400 hover:text-rose-300 transition-opacity flex items-center gap-1 p-1 rounded focus-visible:opacity-100"
-                  title="删除题目"
-                  aria-label={`从记忆库中删除题目 #${problem.number} ${problem.title}`}
+                  title={t('library.deleteBtn')}
+                  aria-label={t('card.deleteAria', { number: problem.number, title: problem.title })}
                 >
                   <Trash2 className="w-3 h-3" />
-                  <span>删除</span>
+                  <span>{t('library.deleteBtn')}</span>
                 </button>
               </div>
             </div>

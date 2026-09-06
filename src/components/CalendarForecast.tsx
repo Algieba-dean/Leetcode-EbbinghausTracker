@@ -2,20 +2,23 @@ import React, { useMemo } from 'react';
 import { Problem } from '../types';
 import { getTodayString, addDays, calculateRetentionRate } from '../utils/ebbinghaus';
 import { Calendar, BarChart2, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { useI18n } from '../utils/i18n';
 
 interface CalendarForecastProps {
   problems: Problem[];
 }
 
 export const CalendarForecast: React.FC<CalendarForecastProps> = ({ problems }) => {
+  const { t } = useI18n();
   const today = getTodayString();
 
   const { next7Days, maxCount, strongCount, moderateCount, criticalCount, totalDueIn7Days } = useMemo(() => {
+    const weekdays = t('calendar.weekdays').split(',');
     const days = Array.from({ length: 7 }, (_, i) => {
       const dateStr = addDays(today, i);
       const d = new Date(dateStr + 'T00:00:00');
-      const dayLabel = i === 0 ? '今日' : i === 1 ? '明天' : `${d.getMonth() + 1}/${d.getDate()}`;
-      const weekday = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][d.getDay()];
+      const dayLabel = i === 0 ? t('calendar.today') : i === 1 ? t('calendar.tomorrow') : `${d.getMonth() + 1}/${d.getDate()}`;
+      const weekday = weekdays[d.getDay()] || '';
 
       const dueCount = problems.filter((p) => p.nextReviewDate === dateStr).length;
       return {
@@ -49,7 +52,7 @@ export const CalendarForecast: React.FC<CalendarForecastProps> = ({ problems }) 
       criticalCount: critical,
       totalDueIn7Days: totalDue,
     };
-  }, [problems, today]);
+  }, [problems, today, t]);
 
   const total = Math.max(1, problems.length);
 
@@ -60,10 +63,10 @@ export const CalendarForecast: React.FC<CalendarForecastProps> = ({ problems }) 
         <div className="flex items-center justify-between text-xs font-semibold text-slate-200 mb-3">
           <span className="flex items-center gap-1.5">
             <Calendar className="w-3.5 h-3.5 text-emerald-400" />
-            未来 7 天复习负荷分布
+            {t('calendar.loadTitle')}
           </span>
           <span className="text-[11px] font-mono text-slate-400 font-normal">
-            共 {totalDueIn7Days} 题待复习
+            {t('calendar.totalDue', { count: totalDueIn7Days })}
           </span>
         </div>
 
@@ -108,26 +111,26 @@ export const CalendarForecast: React.FC<CalendarForecastProps> = ({ problems }) 
         <div className="flex items-center justify-between text-xs font-semibold text-slate-200 mb-2.5">
           <span className="flex items-center gap-1.5">
             <BarChart2 className="w-3.5 h-3.5 text-amber-400" />
-            题库记忆留存健康度
+            {t('calendar.healthTitle')}
           </span>
           <span className="text-[11px] font-mono text-slate-400 font-normal">
-            总计 {problems.length} 题
+            {t('calendar.totalTracked', { count: problems.length })}
           </span>
         </div>
 
         <div className="w-full h-2 rounded-full overflow-hidden flex bg-slate-800 mb-3">
           <div
-            title={`牢固掌握: ${strongCount} 题`}
+            title={t('calendar.strongTooltip', { count: strongCount })}
             style={{ width: `${(strongCount / total) * 100}%` }}
             className="bg-emerald-500 h-full transition-all"
           />
           <div
-            title={`稳步记忆: ${moderateCount} 题`}
+            title={t('calendar.moderateTooltip', { count: moderateCount })}
             style={{ width: `${(moderateCount / total) * 100}%` }}
             className="bg-amber-500 h-full transition-all"
           />
           <div
-            title={`临界遗忘: ${criticalCount} 题`}
+            title={t('calendar.criticalTooltip', { count: criticalCount })}
             style={{ width: `${(criticalCount / total) * 100}%` }}
             className="bg-rose-500 h-full transition-all"
           />
@@ -137,25 +140,25 @@ export const CalendarForecast: React.FC<CalendarForecastProps> = ({ problems }) 
           <div className="p-2 rounded bg-slate-950/60 border border-slate-800/80">
             <div className="flex items-center justify-center gap-1 text-[11px] text-emerald-400 mb-0.5">
               <ShieldCheck className="w-3 h-3" />
-              <span>牢固 (&gt;80%)</span>
+              <span>{t('calendar.strong')}</span>
             </div>
-            <div className="font-mono font-bold text-slate-200 text-sm">{strongCount} 题</div>
+            <div className="font-mono font-bold text-slate-200 text-sm">{strongCount}</div>
           </div>
 
           <div className="p-2 rounded bg-slate-950/60 border border-slate-800/80">
             <div className="flex items-center justify-center gap-1 text-[11px] text-amber-400 mb-0.5">
               <BarChart2 className="w-3 h-3" />
-              <span>稳步 (50-80%)</span>
+              <span>{t('calendar.moderate')}</span>
             </div>
-            <div className="font-mono font-bold text-slate-200 text-sm">{moderateCount} 题</div>
+            <div className="font-mono font-bold text-slate-200 text-sm">{moderateCount}</div>
           </div>
 
           <div className="p-2 rounded bg-slate-950/60 border border-slate-800/80">
             <div className="flex items-center justify-center gap-1 text-[11px] text-rose-400 mb-0.5">
               <AlertTriangle className="w-3 h-3" />
-              <span>临界 (&lt;50%)</span>
+              <span>{t('calendar.critical')}</span>
             </div>
-            <div className="font-mono font-bold text-slate-200 text-sm">{criticalCount} 题</div>
+            <div className="font-mono font-bold text-slate-200 text-sm">{criticalCount}</div>
           </div>
         </div>
       </div>

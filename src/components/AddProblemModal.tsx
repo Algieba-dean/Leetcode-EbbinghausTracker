@@ -3,6 +3,7 @@ import { Difficulty, Problem } from '../types';
 import { X, Sparkles, Loader2, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
 import { getTodayString } from '../utils/ebbinghaus';
 import { fetchLeetCodeMeta, FetchedProblemMeta } from '../utils/leetcodeApi';
+import { useI18n } from '../utils/i18n';
 
 interface AddProblemModalProps {
   isOpen: boolean;
@@ -17,6 +18,7 @@ export const AddProblemModal: React.FC<AddProblemModalProps> = ({
   onAdd,
   initialKeyword = '',
 }) => {
+  const { t } = useI18n();
   const [smartInput, setSmartInput] = useState(initialKeyword);
   const [isSearching, setIsSearching] = useState(false);
   const [previewMeta, setPreviewMeta] = useState<FetchedProblemMeta | null>(null);
@@ -55,10 +57,10 @@ export const AddProblemModal: React.FC<AddProblemModalProps> = ({
       if (meta) {
         setPreviewMeta(meta);
       } else {
-        setErrorMsg('未找到匹配的力扣题目，请检查题号（如 206）或完整题目链接');
+        setErrorMsg(t('add.notFound'));
       }
     } catch {
-      setErrorMsg('网络解析失败，请检查网络或使用手动录入');
+      setErrorMsg(t('add.networkError'));
     } finally {
       setIsSearching(false);
     }
@@ -137,11 +139,11 @@ export const AddProblemModal: React.FC<AddProblemModalProps> = ({
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 shrink-0">
           <div id="add-modal-title" className="flex items-center gap-1.5 text-slate-100 font-semibold text-xs">
             <Sparkles className="w-4 h-4 text-emerald-400" />
-            <span>智能自动导入题目</span>
+            <span>{t('add.modalTitle')}</span>
           </div>
           <button
             onClick={onClose}
-            aria-label="关闭导入窗口"
+            aria-label={t('add.closeAria')}
             className="text-slate-400 hover:text-white transition-colors rounded p-1 focus-visible:ring-2 focus-visible:ring-emerald-500"
           >
             <X className="w-4 h-4" />
@@ -152,7 +154,7 @@ export const AddProblemModal: React.FC<AddProblemModalProps> = ({
           {/* Smart Input Search Bar */}
           <div className="space-y-1.5">
             <label className="block text-slate-300 font-medium text-xs">
-              输入题号、题目名或粘贴力扣链接：
+              {t('add.inputLabel')}
             </label>
             <div className="flex items-center gap-1.5">
               <input
@@ -161,7 +163,7 @@ export const AddProblemModal: React.FC<AddProblemModalProps> = ({
                 autoFocus
                 onChange={(e) => setSmartInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSmartSearch()}
-                placeholder="例如 206 / 两数之和 / 粘贴网址"
+                placeholder={t('add.inputPlaceholder')}
                 className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 placeholder-slate-500 text-xs focus:outline-none focus:border-emerald-500 transition-colors"
               />
               <button
@@ -170,7 +172,7 @@ export const AddProblemModal: React.FC<AddProblemModalProps> = ({
                 disabled={isSearching || !smartInput.trim()}
                 className="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-medium text-xs transition-colors flex items-center gap-1 shrink-0 shadow-sm"
               >
-                {isSearching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <span>自动解析</span>}
+                {isSearching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <span>{t('add.fetchBtn')}</span>}
               </button>
             </div>
           </div>
@@ -188,7 +190,7 @@ export const AddProblemModal: React.FC<AddProblemModalProps> = ({
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-mono font-bold text-emerald-400 flex items-center gap-1">
                   <CheckCircle2 className="w-3 h-3" />
-                  已自动识别力扣官方元数据
+                  {t('add.metaSuccess')}
                 </span>
                 <span className={`px-1.5 py-0.2 rounded font-mono text-[10px] border ${difficultyColors[previewMeta.difficulty]}`}>
                   {previewMeta.difficulty}
@@ -209,12 +211,12 @@ export const AddProblemModal: React.FC<AddProblemModalProps> = ({
               </div>
 
               <div className="pt-2 border-t border-slate-800/80">
-                <label className="block text-slate-400 text-[10px] mb-1">思路卡片 / 核心破局要点 (选填)</label>
+                <label className="block text-slate-400 text-[10px] mb-1">{t('add.notesLabel')}</label>
                 <textarea
                   rows={2}
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="可记录关键算法套路或易错点..."
+                  placeholder={t('add.notesPlaceholder')}
                   className="w-full bg-slate-900 border border-slate-700/60 rounded p-1.5 text-[11px] text-slate-200 focus:outline-none focus:border-emerald-500 leading-relaxed font-sans"
                 />
               </div>
@@ -225,7 +227,7 @@ export const AddProblemModal: React.FC<AddProblemModalProps> = ({
                 className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors shadow-sm mt-2"
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>立即纳入艾宾浩斯复习计划</span>
+                <span>{t('add.submitBtn')}</span>
               </button>
             </div>
           )}
@@ -237,7 +239,7 @@ export const AddProblemModal: React.FC<AddProblemModalProps> = ({
               onClick={() => setShowManual(!showManual)}
               className="w-full flex items-center justify-between text-[11px] text-slate-400 hover:text-slate-300 py-1"
             >
-              <span>非力扣题目？点击展开纯手动模式</span>
+              <span>{t('add.manualToggle')}</span>
               {showManual ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
             </button>
 
@@ -245,21 +247,21 @@ export const AddProblemModal: React.FC<AddProblemModalProps> = ({
               <form onSubmit={handleManualSubmit} className="mt-2 space-y-2.5 pt-1">
                 <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <label className="block text-slate-500 text-[10px] mb-0.5">编号</label>
+                    <label className="block text-slate-500 text-[10px] mb-0.5">{t('add.manualNumberLabel')}</label>
                     <input
                       type="text"
-                      placeholder="题号"
+                      placeholder={t('add.manualNumberPlaceholder')}
                       value={manualNumber}
                       onChange={(e) => setManualNumber(e.target.value)}
                       className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200 text-xs font-mono focus:outline-none focus:border-emerald-500"
                     />
                   </div>
                   <div className="col-span-2">
-                    <label className="block text-slate-500 text-[10px] mb-0.5">题目名称 *</label>
+                    <label className="block text-slate-500 text-[10px] mb-0.5">{t('add.manualTitleLabel')}</label>
                     <input
                       type="text"
                       required
-                      placeholder="题目名称"
+                      placeholder={t('add.manualTitlePlaceholder')}
                       value={manualTitle}
                       onChange={(e) => setManualTitle(e.target.value)}
                       className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200 text-xs focus:outline-none focus:border-emerald-500"
@@ -286,7 +288,7 @@ export const AddProblemModal: React.FC<AddProblemModalProps> = ({
 
                 <input
                   type="text"
-                  placeholder="标签 (例如 动态规划, 背包)"
+                  placeholder={t('add.manualTagsPlaceholder')}
                   value={manualTags}
                   onChange={(e) => setManualTags(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-slate-200 text-xs focus:outline-none focus:border-emerald-500"
@@ -296,7 +298,7 @@ export const AddProblemModal: React.FC<AddProblemModalProps> = ({
                   type="submit"
                   className="w-full py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded font-medium text-xs border border-slate-700 transition-colors"
                 >
-                  添加手动卡片
+                  {t('add.manualSubmit')}
                 </button>
               </form>
             )}

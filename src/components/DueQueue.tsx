@@ -4,6 +4,7 @@ import { ProblemCard } from './ProblemCard';
 import { ZeroInbox } from './ZeroInbox';
 import { AlertCircle } from 'lucide-react';
 import { diffDays, getTodayString } from '../utils/ebbinghaus';
+import { useI18n } from '../utils/i18n';
 
 interface DueQueueProps {
   problems: Problem[];
@@ -20,6 +21,7 @@ export const DueQueue: React.FC<DueQueueProps> = ({
   onViewLibrary,
   ladder,
 }) => {
+  const { t } = useI18n();
   const today = getTodayString();
 
   const { sorted, overdueCount } = useMemo(() => {
@@ -50,7 +52,7 @@ export const DueQueue: React.FC<DueQueueProps> = ({
         <div className="flex items-center gap-2 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs">
           <AlertCircle className="w-4 h-4 shrink-0 text-amber-400" />
           <span>
-            有 <strong>{overdueCount}</strong> 道题目已超期，建议趁热打铁优先重做！
+            {t('due.overdueAlert', { count: overdueCount })}
           </span>
         </div>
       )}

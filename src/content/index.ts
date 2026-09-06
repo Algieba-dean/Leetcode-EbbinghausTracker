@@ -1,8 +1,10 @@
 // Content Script for LeetCode (leetcode.cn / leetcode.com)
 // Built with Shadow DOM for complete CSS isolation and robust LeetCode DOM parsing.
 
-import { Problem, ReviewGrade, Difficulty } from '../types';
-import { calculateSM2, getTodayString, DEFAULT_EBBINGHAUS_LADDER, GRADE_CONFIG } from '../utils/ebbinghaus';
+import { Problem, ReviewGrade, Difficulty, UserSettings } from '../types';
+import { calculateSM2, getTodayString, DEFAULT_EBBINGHAUS_LADDER } from '../utils/ebbinghaus';
+import { DEFAULT_SETTINGS } from '../utils/storage';
+import { createI18n, resolveLanguage, getLocalizedGradeMeta } from '../utils/i18n';
 
 const STORAGE_KEY_PROBLEMS = 'lc_ebbinghaus_problems';
 const STORAGE_KEY_SETTINGS = 'lc_ebbinghaus_settings';
@@ -143,23 +145,24 @@ async function getStoredProblems(): Promise<Problem[]> {
   });
 }
 
-async function getStoredLadder(): Promise<number[]> {
-  if (!isExtensionValid()) return DEFAULT_EBBINGHAUS_LADDER;
+
+async function getStoredSettings(): Promise<UserSettings> {
+  if (!isExtensionValid()) return DEFAULT_SETTINGS;
   return new Promise((resolve) => {
     try {
       chrome.storage.local.get([STORAGE_KEY_SETTINGS], (res) => {
         if (chrome.runtime.lastError) {
-          resolve(DEFAULT_EBBINGHAUS_LADDER);
+          resolve(DEFAULT_SETTINGS);
           return;
         }
-        const s = res[STORAGE_KEY_SETTINGS];
-        resolve(s?.ladder || DEFAULT_EBBINGHAUS_LADDER);
+        resolve(res[STORAGE_KEY_SETTINGS] || DEFAULT_SETTINGS);
       });
     } catch {
-      resolve(DEFAULT_EBBINGHAUS_LADDER);
+      resolve(DEFAULT_SETTINGS);
     }
   });
 }
+
 
 async function saveStoredProblems(list: Problem[]): Promise<void> {
   if (!isExtensionValid()) return;
@@ -404,7 +407,11 @@ function initCapsule(): void {
     if (!meta.slug) return;
 
     const problems = await getStoredProblems();
-    const ladder = await getStoredLadder();
+    const settings = await getStoredSettings();
+    const ladder = settings.ladder || DEFAULT_EBBINGHAUS_LADDER;
+    const lang = resolveLanguage(settings.language, window.location.hostname);
+    const { t } = createI18n(lang);
+
     const existing = problems.find(
       (p) => p.slug === meta.slug || (meta.number !== '0' && p.number === meta.number)
     );
@@ -420,12 +427,12 @@ function initCapsule(): void {
       const isDue = existing.nextReviewDate <= today;
       pill.innerHTML = `
         <span class="pulse-dot ${isDue ? 'amber' : ''}"></span>
-        <span>🧠 艾宾浩斯: 第${existing.repetition + 1}阶 (${existing.interval}d)</span>
+        <span>${t('capsule.pillTracked', { stage: existing.repetition + 1, interval: existing.interval })}</span>
       `;
     } else {
       pill.innerHTML = `
         <span class="pulse-dot"></span>
-        <span>🧠 艾宾浩斯: 一键收录</span>
+        <span>${t('capsule.pillUntracked')}</span>
       `;
     }
 
@@ -445,11 +452,11 @@ function initCapsule(): void {
         const isReviewedToday = existing.lastReviewedDate === today;
 
         panel.innerHTML = `
-          ${autoAcNotified ? `<div class="auto-ac-banner">🎉 检测到提交通过！已自动记录。</div>` : ''}
+          ${autoAcNotified ? `<div class="auto-ac-banner">${t('capsule.autoAcBanner')}</div>` : ''}
 
           <div class="panel-header">
             <div class="title-row">
-              <span>🧠 艾宾浩斯复习</span>
+              <span>${t('capsule.panelTitleTracked')}</span>
             </div>
             <div style="display: flex; gap: 4px;">
               <span class="badge ${existing.difficulty.toLowerCase()}">${existing.difficulty}</span>
@@ -462,40 +469,35 @@ function initCapsule(): void {
           </div>
 
           <div class="meta-info">
-            <div>当前阶段：<strong>第 ${existing.repetition + 1} 阶</strong> (间隔 ${existing.interval} 天)</div>
-            <div>下次复习：<strong>${existing.nextReviewDate}</strong></div>
-            ${isReviewedToday ? `<div style="color: #34d399; margin-top: 3px;">✅ 今日复习已打卡！</div>` : `<div style="color: #f59e0b; margin-top: 3px;">⏱️ 今日待做题并评定</div>`}
+            <div>${t('capsule.currentStage', { stage: existing.repetition + 1, interval: existing.interval })}</div>
+            <div>${t('capsule.nextReview', { date: existing.nextReviewDate })}</div>
+            ${isReviewedToday ? `<div style="color: #34d399; margin-top: 3px;">${t('capsule.reviewedToday')}</div>` : `<div style="color: #f59e0b; margin-top: 3px;">${t('capsule.dueToday')}</div>`}
           </div>
 
           ${
             isReviewedToday
-              ? `<div class="done-banner">🎉 记忆已刷新至下个周期！</div>`
+              ? `<div class="done-banner">${t('capsule.doneBanner')}</div>`
               : `
-            <div style="font-size: 11px; color: #94a3b8; margin-bottom: 4px;">做完后评定记忆熟练度：</div>
+            <div style="font-size: 11px; color: #94a3b8; margin-bottom: 4px;">${t('capsule.ratePrompt')}</div>
             <div class="btn-grid">
-              <button class="rate-btn again" data-grade="1">
-                <div>重来</div>
-                <div style="font-size: 9px; opacity: 0.75;">${GRADE_CONFIG[1].getNextDays(existing.repetition, existing.interval, ladder)}</div>
-              </button>
-              <button class="rate-btn hard" data-grade="2">
-                <div>困难</div>
-                <div style="font-size: 9px; opacity: 0.75;">${GRADE_CONFIG[2].getNextDays(existing.repetition, existing.interval, ladder)}</div>
-              </button>
-              <button class="rate-btn good" data-grade="3">
-                <div>良好</div>
-                <div style="font-size: 9px; opacity: 0.75;">${GRADE_CONFIG[3].getNextDays(existing.repetition, existing.interval, ladder)}</div>
-              </button>
-              <button class="rate-btn easy" data-grade="4">
-                <div>简单</div>
-                <div style="font-size: 9px; opacity: 0.75;">${GRADE_CONFIG[4].getNextDays(existing.repetition, existing.interval, ladder)}</div>
-              </button>
+              ${([1, 2, 3, 4] as ReviewGrade[])
+                .map((grade) => {
+                  const metaGrade = getLocalizedGradeMeta(grade, existing.repetition, existing.interval, ladder, lang);
+                  const cls = ['again', 'hard', 'good', 'easy'][grade - 1];
+                  return `
+                <button class="rate-btn ${cls}" data-grade="${grade}">
+                  <div>${metaGrade.name}</div>
+                  <div style="font-size: 9px; opacity: 0.75;">${metaGrade.nextDays}</div>
+                </button>`;
+                })
+                .join('')}
             </div>
           `
           }
 
           <div class="footer-actions">
-            <span style="color: #64748b;">艾宾浩斯跟踪中</span>
-            <button id="capsule-remove-btn" class="del-btn">从复习库移除此题</button>
+            <span style="color: #64748b;">${t('capsule.trackingFooter')}</span>
+            <button id="capsule-remove-btn" class="del-btn">${t('capsule.removeBtn')}</button>
           </div>
         `;
 
@@ -535,7 +537,7 @@ function initCapsule(): void {
         });
 
         panel.querySelector('#capsule-remove-btn')?.addEventListener('click', async () => {
-          if (confirm(`确定从艾宾浩斯复习库中移除题目 #${existing.number} ${existing.title} 吗？`)) {
+          if (confirm(t('capsule.removeConfirm', { number: existing.number, title: existing.title }))) {
             const list = await getStoredProblems();
             const filtered = list.filter((p) => p.id !== existing.id);
             await saveStoredProblems(filtered);
@@ -547,7 +549,7 @@ function initCapsule(): void {
         panel.innerHTML = `
           <div class="panel-header">
             <div class="title-row">
-              <span>🧠 艾宾浩斯复习计划</span>
+              <span>${t('capsule.panelTitleUntracked')}</span>
             </div>
             <div style="display: flex; gap: 4px;">
               <span class="badge ${meta.difficulty.toLowerCase()}">${meta.difficulty}</span>
@@ -560,13 +562,13 @@ function initCapsule(): void {
           </div>
 
           <p style="color: #94a3b8; font-size: 11px; margin-bottom: 8px; line-height: 1.4;">
-            已自动识别题目信息。点击下方按钮即可一键纳入，明天准时开启第 1 轮复习！
+            ${t('capsule.untrackedDesc')}
           </p>
 
-          <textarea id="capsule-notes-input" class="textarea-notes" placeholder="关键解题思路或易错点卡片 (选填)..."></textarea>
+          <textarea id="capsule-notes-input" class="textarea-notes" placeholder="${t('capsule.notesPlaceholder')}"></textarea>
 
           <button id="capsule-submit-add" class="add-action-btn">
-            <span>🚀 一键纳入艾宾浩斯复习</span>
+            <span>${t('capsule.submitAdd')}</span>
           </button>
         `;
 
@@ -639,6 +641,10 @@ function initCapsule(): void {
         const list = await getStoredProblems();
         const existing = list.find((p) => p.slug === meta.slug);
         if (!existing) {
+          const settings = await getStoredSettings();
+          const lang = resolveLanguage(settings.language, window.location.hostname);
+          const { t } = createI18n(lang);
+
           // Auto add on real submission AC
           const newProblem: Problem = {
             id: `lc-${meta.slug || Date.now()}`,
@@ -648,7 +654,7 @@ function initCapsule(): void {
             url: window.location.href,
             difficulty: meta.difficulty,
             tags: meta.tags,
-            notes: '做题提交通过，自动收录',
+            notes: t('capsule.autoAcNotes'),
             createdAt: Date.now(),
             repetition: 0,
             interval: 1,

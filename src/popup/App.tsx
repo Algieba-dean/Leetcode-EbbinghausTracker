@@ -18,6 +18,7 @@ import { SettingsModal } from '../components/SettingsModal';
 import { extractSlugFromUrl, fetchLeetCodeMeta } from '../utils/leetcodeApi';
 import { getTodayString } from '../utils/ebbinghaus';
 import { Sparkles, Check } from 'lucide-react';
+import { I18nProvider, resolveLanguage, translate } from '../utils/i18n';
 
 export const App: React.FC = () => {
   const [problems, setProblems] = useState<Problem[]>([]);
@@ -125,106 +126,110 @@ export const App: React.FC = () => {
   };
 
   const summary = computeDailySummary(problems);
+  const lang = resolveLanguage(settings?.language || 'system');
+  const t = (key: any, params?: any) => translate(lang, key, params);
 
   return (
-    <div className="w-[400px] min-h-[560px] max-h-[600px] flex flex-col bg-slate-950 text-slate-100 font-sans antialiased overflow-hidden select-none">
-      <Header
-        summary={summary}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        onOpenAddModal={() => {
-          setModalKeyword('');
-          setIsAddModalOpen(true);
-        }}
-        onOpenSettingsModal={() => setIsSettingsModalOpen(true)}
-      />
+    <I18nProvider language={settings?.language || 'system'}>
+      <div className="w-[400px] min-h-[560px] max-h-[600px] flex flex-col bg-slate-950 text-slate-100 font-sans antialiased overflow-hidden select-none">
+        <Header
+          summary={summary}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          onOpenAddModal={() => {
+            setModalKeyword('');
+            setIsAddModalOpen(true);
+          }}
+          onOpenSettingsModal={() => setIsSettingsModalOpen(true)}
+        />
 
-      {/* Instant Active Tab LeetCode Ingestion Banner */}
-      {currentTabProblem && !currentTabProblem.alreadyTracked && (
-        <div className="bg-emerald-950/70 border-b border-emerald-500/30 px-3.5 py-2 flex items-center justify-between gap-2 animate-fadeIn">
-          <div className="text-[11px] text-emerald-200 truncate flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-            <span className="truncate">
-              检测到力扣当前页：<strong>#{currentTabProblem.number} {currentTabProblem.title}</strong>
+        {/* Instant Active Tab LeetCode Ingestion Banner */}
+        {currentTabProblem && !currentTabProblem.alreadyTracked && (
+          <div className="bg-emerald-950/70 border-b border-emerald-500/30 px-3.5 py-2 flex items-center justify-between gap-2 animate-fadeIn">
+            <div className="text-[11px] text-emerald-200 truncate flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+              <span className="truncate">
+                {t('banner.detected', { number: currentTabProblem.number, title: currentTabProblem.title })}
+              </span>
+            </div>
+
+            <button
+              onClick={handleOneClickImportCurrentTab}
+              className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-medium text-[11px] shrink-0 flex items-center gap-1 shadow-sm transition-colors"
+            >
+              <Sparkles className="w-3 h-3" />
+              <span>{t('banner.import')}</span>
+            </button>
+          </div>
+        )}
+
+        {currentTabProblem && currentTabProblem.alreadyTracked && (
+          <div className="bg-slate-900/60 border-b border-slate-800 px-3.5 py-1.5 flex items-center justify-between text-[11px] text-slate-400">
+            <span>{t('banner.alreadyTracked')}</span>
+            <span className="text-emerald-400 font-mono text-[10px] flex items-center gap-1">
+              <Check className="w-3 h-3" />
+              {t('banner.trackedBadge')}
             </span>
           </div>
-
-          <button
-            onClick={handleOneClickImportCurrentTab}
-            className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-medium text-[11px] shrink-0 flex items-center gap-1 shadow-sm transition-colors"
-          >
-            <Sparkles className="w-3 h-3" />
-            <span>一键收录</span>
-          </button>
-        </div>
-      )}
-
-      {currentTabProblem && currentTabProblem.alreadyTracked && (
-        <div className="bg-slate-900/60 border-b border-slate-800 px-3.5 py-1.5 flex items-center justify-between text-[11px] text-slate-400">
-          <span>当前页面题目已在艾宾浩斯复习库中</span>
-          <span className="text-emerald-400 font-mono text-[10px] flex items-center gap-1">
-            <Check className="w-3 h-3" />
-            已跟踪
-          </span>
-        </div>
-      )}
-
-      <main className="flex-1 overflow-y-auto custom-scrollbar">
-        {loading ? (
-          <div className="py-20 text-center text-xs text-slate-500">
-            加载艾宾浩斯记忆库...
-          </div>
-        ) : (
-          <>
-            {activeTab === 'due' && (
-              <div role="tabpanel" id="panel-due" aria-labelledby="tab-due">
-                <DueQueue
-                  problems={problems}
-                  onRate={handleRate}
-                  onDelete={handleDeleteProblem}
-                  onViewLibrary={() => setActiveTab('library')}
-                  ladder={settings?.ladder}
-                />
-              </div>
-            )}
-
-            {activeTab === 'completed' && (
-              <div role="tabpanel" id="panel-completed" aria-labelledby="tab-completed">
-                <CompletedList problems={problems} onRate={handleRate} />
-              </div>
-            )}
-
-            {activeTab === 'library' && (
-              <div role="tabpanel" id="panel-library" aria-labelledby="tab-library">
-                <ProblemLibrary
-                  problems={problems}
-                  onRate={handleRate}
-                  onDeleteProblem={handleDeleteProblem}
-                />
-              </div>
-            )}
-
-            {activeTab === 'calendar' && (
-              <div role="tabpanel" id="panel-calendar" aria-labelledby="tab-calendar">
-                <CalendarForecast problems={problems} />
-              </div>
-            )}
-          </>
         )}
-      </main>
 
-      <AddProblemModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        onAdd={handleAddProblem}
-        initialKeyword={modalKeyword}
-      />
+        <main className="flex-1 overflow-y-auto custom-scrollbar">
+          {loading ? (
+            <div className="py-20 text-center text-xs text-slate-500">
+              {t('app.loading')}
+            </div>
+          ) : (
+            <>
+              {activeTab === 'due' && (
+                <div role="tabpanel" id="panel-due" aria-labelledby="tab-due">
+                  <DueQueue
+                    problems={problems}
+                    onRate={handleRate}
+                    onDelete={handleDeleteProblem}
+                    onViewLibrary={() => setActiveTab('library')}
+                    ladder={settings?.ladder}
+                  />
+                </div>
+              )}
 
-      <SettingsModal
-        isOpen={isSettingsModalOpen}
-        onClose={() => setIsSettingsModalOpen(false)}
-        onDataChanged={refreshData}
-      />
-    </div>
+              {activeTab === 'completed' && (
+                <div role="tabpanel" id="panel-completed" aria-labelledby="tab-completed">
+                  <CompletedList problems={problems} onRate={handleRate} />
+                </div>
+              )}
+
+              {activeTab === 'library' && (
+                <div role="tabpanel" id="panel-library" aria-labelledby="tab-library">
+                  <ProblemLibrary
+                    problems={problems}
+                    onRate={handleRate}
+                    onDeleteProblem={handleDeleteProblem}
+                  />
+                </div>
+              )}
+
+              {activeTab === 'calendar' && (
+                <div role="tabpanel" id="panel-calendar" aria-labelledby="tab-calendar">
+                  <CalendarForecast problems={problems} />
+                </div>
+              )}
+            </>
+          )}
+        </main>
+
+        <AddProblemModal
+          isOpen={isAddModalOpen}
+          onClose={() => setIsAddModalOpen(false)}
+          onAdd={handleAddProblem}
+          initialKeyword={modalKeyword}
+        />
+
+        <SettingsModal
+          isOpen={isSettingsModalOpen}
+          onClose={() => setIsSettingsModalOpen(false)}
+          onDataChanged={refreshData}
+        />
+      </div>
+    </I18nProvider>
   );
 };

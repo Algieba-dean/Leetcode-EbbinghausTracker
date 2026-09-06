@@ -1,6 +1,7 @@
 import React from 'react';
 import { DailySummary } from '../types';
 import { Brain, Flame, Plus, Settings, CheckCircle2 } from 'lucide-react';
+import { useI18n } from '../utils/i18n';
 
 interface HeaderProps {
   summary: DailySummary;
@@ -17,6 +18,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAddModal,
   onOpenSettingsModal,
 }) => {
+  const { t } = useI18n();
   const totalTasksToday = summary.totalDue + summary.completedToday;
   const progressPercent = totalTasksToday > 0 ? Math.round((summary.completedToday / totalTasksToday) * 100) : 100;
 
@@ -30,28 +32,28 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
           <div>
             <h1 className="text-sm font-semibold text-slate-100 tracking-tight flex items-center gap-1.5">
-              LeetCode 艾宾浩斯
+              {t('app.title')}
               <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-emerald-400 border border-slate-700/60 font-medium">
                 SM-2
               </span>
             </h1>
-            <p className="text-[11px] text-slate-400 font-sans">间隔重复 · 科学掌握算法</p>
+            <p className="text-[11px] text-slate-400 font-sans">{t('app.subtitle')}</p>
           </div>
         </div>
 
         <div className="flex items-center gap-1">
           <button
             onClick={onOpenAddModal}
-            title="手动录入新题"
-            aria-label="手动录入新题"
+            title={t('app.addTooltip')}
+            aria-label={t('app.addTooltip')}
             className="w-7 h-7 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition-colors border border-slate-700/60 focus-visible:ring-2 focus-visible:ring-emerald-500"
           >
             <Plus className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={onOpenSettingsModal}
-            title="设置与数据管理"
-            aria-label="设置与数据管理"
+            title={t('app.settingsTooltip')}
+            aria-label={t('app.settingsTooltip')}
             className="w-7 h-7 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition-colors border border-slate-700/60 focus-visible:ring-2 focus-visible:ring-emerald-500"
           >
             <Settings className="w-3.5 h-3.5" />
@@ -64,10 +66,10 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center justify-between text-xs mb-1.5">
           <span className="text-slate-300 font-medium flex items-center gap-1.5">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-            今日复习进度
+            {t('header.todayProgress')}
           </span>
           <span className="font-mono text-slate-200 text-xs">
-            <strong className="text-emerald-400 font-bold">{summary.completedToday}</strong> / {totalTasksToday} 题
+            <strong className="text-emerald-400 font-bold">{summary.completedToday}</strong> / {totalTasksToday} {t('header.unitProblem')}
             <span className="text-slate-400 ml-1.5 text-[11px]">({progressPercent}%)</span>
           </span>
         </div>
@@ -78,7 +80,7 @@ export const Header: React.FC<HeaderProps> = ({
           aria-valuenow={progressPercent}
           aria-valuemin={0}
           aria-valuemax={100}
-          aria-label="今日复习完成度"
+          aria-label={t('header.progressAria')}
           className="w-full h-2 rounded-full bg-slate-800 overflow-hidden relative"
         >
           <div
@@ -91,21 +93,21 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-800/60 text-[11px] text-slate-400">
           <div className="flex items-center gap-1">
             <Flame className="w-3 h-3 text-amber-500" />
-            <span>连续 <strong className="text-slate-200 font-mono font-medium">{summary.streakDays}</strong> 天</span>
+            <span>{t('header.streak', { n: summary.streakDays })}</span>
           </div>
           <div className="flex items-center gap-1">
-            <span>总留存率:</span>
+            <span>{t('header.retention')}</span>
             <strong className="text-emerald-400 font-mono font-medium">{summary.retentionRate}%</strong>
           </div>
           <div className="flex items-center gap-1">
-            <span>题库:</span>
-            <strong className="text-slate-300 font-mono font-medium">{summary.totalTracked}</strong> 题
+            <span>{t('header.library')}</span>
+            <strong className="text-slate-300 font-mono font-medium">{summary.totalTracked}</strong> {t('header.unitProblem')}
           </div>
         </div>
       </div>
 
       {/* Segmented Navigation Tabs */}
-      <nav role="tablist" aria-label="复习视图导航" className="flex rounded-lg bg-slate-950/90 p-1 border border-slate-800">
+      <nav role="tablist" aria-label={t('tab.navAria')} className="flex rounded-lg bg-slate-950/90 p-1 border border-slate-800">
         <button
           role="tab"
           id="tab-due"
@@ -118,7 +120,7 @@ export const Header: React.FC<HeaderProps> = ({
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
           }`}
         >
-          <span>今日待办</span>
+          <span>{t('tab.due')}</span>
           {summary.totalDue > 0 && (
             <span className="px-1.5 py-0.2 text-[10px] font-mono font-bold rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
               {summary.totalDue}
@@ -138,7 +140,7 @@ export const Header: React.FC<HeaderProps> = ({
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
           }`}
         >
-          <span>已完成</span>
+          <span>{t('tab.completed')}</span>
           {summary.completedToday > 0 && (
             <span className="text-[10px] font-mono text-emerald-400">({summary.completedToday})</span>
           )}
@@ -156,7 +158,7 @@ export const Header: React.FC<HeaderProps> = ({
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
           }`}
         >
-          题库档案
+          {t('tab.library')}
         </button>
 
         <button
@@ -171,7 +173,7 @@ export const Header: React.FC<HeaderProps> = ({
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
           }`}
         >
-          日历负荷
+          {t('tab.calendar')}
         </button>
       </nav>
     </header>
