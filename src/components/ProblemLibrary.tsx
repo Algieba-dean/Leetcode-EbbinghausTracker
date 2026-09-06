@@ -95,7 +95,14 @@ export const ProblemLibrary: React.FC<ProblemLibraryProps> = ({
         <span>共匹配 {filtered.length} 道题目</span>
       </div>
 
-      {filtered.length === 0 ? (
+      {problems.length === 0 ? (
+        <div className="py-12 text-center text-slate-400 text-xs px-4 bg-slate-900/40 rounded-xl border border-slate-800/80">
+          <p className="font-semibold text-slate-200 mb-1.5">题库当前已清空（0 道题）</p>
+          <p className="text-slate-400 leading-relaxed text-[11px]">
+            你已清除所有题目。可以在力扣网页右下角点击悬浮胶囊一键收录，或点击右上角「+ 录入题目」添加新题！
+          </p>
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="py-10 text-center text-slate-500 text-xs">
           没有找到匹配的题目
         </div>

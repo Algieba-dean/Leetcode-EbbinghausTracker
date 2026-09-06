@@ -51,9 +51,13 @@ async function setItem<T>(key: string, value: T): Promise<void> {
 export function notifyBadgeUpdate(): void {
   if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
     try {
-      chrome.runtime.sendMessage({ type: 'UPDATE_BADGE' });
+      chrome.runtime.sendMessage({ type: 'UPDATE_BADGE' }, () => {
+        if (chrome.runtime.lastError) {
+          // ignore
+        }
+      });
     } catch {
-      // Ignore in background
+      // Ignore
     }
   }
 }
@@ -133,14 +137,26 @@ export const INITIAL_SAMPLE_PROBLEMS: Problem[] = [
   },
 ];
 
+const STORAGE_KEY_INITIALIZED = 'lc_ebbinghaus_initialized';
+
 export async function getProblems(): Promise<Problem[]> {
-  const problems = await getItem<Problem[]>(STORAGE_KEY_PROBLEMS, []);
-  if (problems.length === 0) {
+  const isInitialized = await getItem<boolean>(STORAGE_KEY_INITIALIZED, false);
+  const problems = await getItem<Problem[] | null>(STORAGE_KEY_PROBLEMS, null);
+
+  // If this is the true first run (never initialized and no data stored)
+  if (!isInitialized && problems === null) {
+    await setItem(STORAGE_KEY_INITIALIZED, true);
     await setItem(STORAGE_KEY_PROBLEMS, INITIAL_SAMPLE_PROBLEMS);
     notifyBadgeUpdate();
     return INITIAL_SAMPLE_PROBLEMS;
   }
-  return problems;
+
+  // Once initialized, user may intentionally have 0 problems ([]). Never auto-restore!
+  if (!isInitialized) {
+    await setItem(STORAGE_KEY_INITIALIZED, true);
+  }
+
+  return Array.isArray(problems) ? problems : [];
 }
 
 export async function saveProblem(problem: Problem): Promise<void> {
@@ -151,6 +167,7 @@ export async function saveProblem(problem: Problem): Promise<void> {
   } else {
     list.unshift(problem);
   }
+  await setItem(STORAGE_KEY_INITIALIZED, true);
   await setItem(STORAGE_KEY_PROBLEMS, list);
   notifyBadgeUpdate();
 }
@@ -158,6 +175,7 @@ export async function saveProblem(problem: Problem): Promise<void> {
 export async function deleteProblem(id: string): Promise<void> {
   const list = await getProblems();
   const filtered = list.filter((p) => p.id !== id);
+  await setItem(STORAGE_KEY_INITIALIZED, true);
   await setItem(STORAGE_KEY_PROBLEMS, filtered);
   notifyBadgeUpdate();
 }
@@ -165,11 +183,13 @@ export async function deleteProblem(id: string): Promise<void> {
 export async function clearSampleProblems(): Promise<void> {
   const list = await getProblems();
   const filtered = list.filter((p) => !p.isSample);
+  await setItem(STORAGE_KEY_INITIALIZED, true);
   await setItem(STORAGE_KEY_PROBLEMS, filtered);
   notifyBadgeUpdate();
 }
 
 export async function clearAllProblems(): Promise<void> {
+  await setItem(STORAGE_KEY_INITIALIZED, true);
   await setItem(STORAGE_KEY_PROBLEMS, []);
   notifyBadgeUpdate();
 }
