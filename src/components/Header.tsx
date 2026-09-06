@@ -43,14 +43,16 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={onOpenAddModal}
             title="手动录入新题"
-            className="w-7 h-7 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition-colors border border-slate-700/60"
+            aria-label="手动录入新题"
+            className="w-7 h-7 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition-colors border border-slate-700/60 focus-visible:ring-2 focus-visible:ring-emerald-500"
           >
             <Plus className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={onOpenSettingsModal}
             title="设置与数据管理"
-            className="w-7 h-7 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition-colors border border-slate-700/60"
+            aria-label="设置与数据管理"
+            className="w-7 h-7 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition-colors border border-slate-700/60 focus-visible:ring-2 focus-visible:ring-emerald-500"
           >
             <Settings className="w-3.5 h-3.5" />
           </button>
@@ -71,7 +73,14 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Progress bar track */}
-        <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden relative">
+        <div
+          role="progressbar"
+          aria-valuenow={progressPercent}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label="今日复习完成度"
+          className="w-full h-2 rounded-full bg-slate-800 overflow-hidden relative"
+        >
           <div
             className="h-full bg-emerald-500 rounded-full transition-all duration-500 ease-out"
             style={{ width: `${progressPercent}%` }}
@@ -96,8 +105,12 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Segmented Navigation Tabs */}
-      <nav className="flex rounded-lg bg-slate-950/90 p-1 border border-slate-800">
+      <nav role="tablist" aria-label="复习视图导航" className="flex rounded-lg bg-slate-950/90 p-1 border border-slate-800">
         <button
+          role="tab"
+          id="tab-due"
+          aria-selected={activeTab === 'due'}
+          aria-controls="panel-due"
           onClick={() => onTabChange('due')}
           className={`flex-1 py-1 px-2 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1.5 ${
             activeTab === 'due'
@@ -114,6 +127,10 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
 
         <button
+          role="tab"
+          id="tab-completed"
+          aria-selected={activeTab === 'completed'}
+          aria-controls="panel-completed"
           onClick={() => onTabChange('completed')}
           className={`flex-1 py-1 px-2 text-xs font-medium rounded-md transition-all flex items-center justify-center gap-1 ${
             activeTab === 'completed'
@@ -128,6 +145,10 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
 
         <button
+          role="tab"
+          id="tab-library"
+          aria-selected={activeTab === 'library'}
+          aria-controls="panel-library"
           onClick={() => onTabChange('library')}
           className={`flex-1 py-1 px-2 text-xs font-medium rounded-md transition-all ${
             activeTab === 'library'
@@ -139,6 +160,10 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
 
         <button
+          role="tab"
+          id="tab-calendar"
+          aria-selected={activeTab === 'calendar'}
+          aria-controls="panel-calendar"
           onClick={() => onTabChange('calendar')}
           className={`flex-1 py-1 px-2 text-xs font-medium rounded-md transition-all ${
             activeTab === 'calendar'

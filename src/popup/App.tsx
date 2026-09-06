@@ -177,29 +177,37 @@ export const App: React.FC = () => {
         ) : (
           <>
             {activeTab === 'due' && (
-              <DueQueue
-                problems={problems}
-                onRate={handleRate}
-                onDelete={handleDeleteProblem}
-                onViewLibrary={() => setActiveTab('library')}
-                ladder={settings?.ladder}
-              />
+              <div role="tabpanel" id="panel-due" aria-labelledby="tab-due">
+                <DueQueue
+                  problems={problems}
+                  onRate={handleRate}
+                  onDelete={handleDeleteProblem}
+                  onViewLibrary={() => setActiveTab('library')}
+                  ladder={settings?.ladder}
+                />
+              </div>
             )}
 
             {activeTab === 'completed' && (
-              <CompletedList problems={problems} onRate={handleRate} />
+              <div role="tabpanel" id="panel-completed" aria-labelledby="tab-completed">
+                <CompletedList problems={problems} onRate={handleRate} />
+              </div>
             )}
 
             {activeTab === 'library' && (
-              <ProblemLibrary
-                problems={problems}
-                onRate={handleRate}
-                onDeleteProblem={handleDeleteProblem}
-              />
+              <div role="tabpanel" id="panel-library" aria-labelledby="tab-library">
+                <ProblemLibrary
+                  problems={problems}
+                  onRate={handleRate}
+                  onDeleteProblem={handleDeleteProblem}
+                />
+              </div>
             )}
 
             {activeTab === 'calendar' && (
-              <CalendarForecast problems={problems} />
+              <div role="tabpanel" id="panel-calendar" aria-labelledby="tab-calendar">
+                <CalendarForecast problems={problems} />
+              </div>
             )}
           </>
         )}

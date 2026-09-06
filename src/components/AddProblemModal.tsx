@@ -126,15 +126,24 @@ export const AddProblemModal: React.FC<AddProblemModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-3 animate-fadeIn select-none">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="add-modal-title"
+      className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-3 animate-fadeIn select-none"
+    >
       <div className="bg-slate-900 border border-slate-700 rounded-xl w-full max-w-[360px] overflow-hidden shadow-soft max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 shrink-0">
-          <div className="flex items-center gap-1.5 text-slate-100 font-semibold text-xs">
+          <div id="add-modal-title" className="flex items-center gap-1.5 text-slate-100 font-semibold text-xs">
             <Sparkles className="w-4 h-4 text-emerald-400" />
             <span>智能自动导入题目</span>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
+          <button
+            onClick={onClose}
+            aria-label="关闭导入窗口"
+            className="text-slate-400 hover:text-white transition-colors rounded p-1 focus-visible:ring-2 focus-visible:ring-emerald-500"
+          >
             <X className="w-4 h-4" />
           </button>
         </div>

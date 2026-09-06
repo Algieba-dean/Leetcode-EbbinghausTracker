@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Problem } from '../types';
 import { getTodayString, addDays, calculateRetentionRate } from '../utils/ebbinghaus';
 import { Calendar, BarChart2, ShieldCheck, AlertTriangle } from 'lucide-react';
@@ -10,35 +10,46 @@ interface CalendarForecastProps {
 export const CalendarForecast: React.FC<CalendarForecastProps> = ({ problems }) => {
   const today = getTodayString();
 
-  // Next 7 days forecast
-  const next7Days = Array.from({ length: 7 }, (_, i) => {
-    const dateStr = addDays(today, i);
-    const d = new Date(dateStr + 'T00:00:00');
-    const dayLabel = i === 0 ? '今日' : i === 1 ? '明天' : `${d.getMonth() + 1}/${d.getDate()}`;
-    const weekday = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][d.getDay()];
+  const { next7Days, maxCount, strongCount, moderateCount, criticalCount, totalDueIn7Days } = useMemo(() => {
+    const days = Array.from({ length: 7 }, (_, i) => {
+      const dateStr = addDays(today, i);
+      const d = new Date(dateStr + 'T00:00:00');
+      const dayLabel = i === 0 ? '今日' : i === 1 ? '明天' : `${d.getMonth() + 1}/${d.getDate()}`;
+      const weekday = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][d.getDay()];
 
-    const dueCount = problems.filter((p) => p.nextReviewDate === dateStr).length;
+      const dueCount = problems.filter((p) => p.nextReviewDate === dateStr).length;
+      return {
+        dateStr,
+        dayLabel,
+        weekday,
+        dueCount,
+      };
+    });
+
+    const max = Math.max(1, ...days.map((d) => d.dueCount));
+
+    let strong = 0;
+    let moderate = 0;
+    let critical = 0;
+
+    for (const p of problems) {
+      const r = calculateRetentionRate(p, today);
+      if (r >= 80) strong += 1;
+      else if (r >= 50) moderate += 1;
+      else critical += 1;
+    }
+
+    const totalDue = days.reduce((acc, cur) => acc + cur.dueCount, 0);
+
     return {
-      dateStr,
-      dayLabel,
-      weekday,
-      dueCount,
+      next7Days: days,
+      maxCount: max,
+      strongCount: strong,
+      moderateCount: moderate,
+      criticalCount: critical,
+      totalDueIn7Days: totalDue,
     };
-  });
-
-  const maxCount = Math.max(1, ...next7Days.map((d) => d.dueCount));
-
-  // Memory Retention distribution
-  let strongCount = 0; // > 80%
-  let moderateCount = 0; // 50-80%
-  let criticalCount = 0; // < 50%
-
-  for (const p of problems) {
-    const r = calculateRetentionRate(p, today);
-    if (r >= 80) strongCount += 1;
-    else if (r >= 50) moderateCount += 1;
-    else criticalCount += 1;
-  }
+  }, [problems, today]);
 
   const total = Math.max(1, problems.length);
 
@@ -52,7 +63,7 @@ export const CalendarForecast: React.FC<CalendarForecastProps> = ({ problems }) 
             未来 7 天复习负荷分布
           </span>
           <span className="text-[11px] font-mono text-slate-400 font-normal">
-            共 {next7Days.reduce((acc, cur) => acc + cur.dueCount, 0)} 题待复习
+            共 {totalDueIn7Days} 题待复习
           </span>
         </div>
 

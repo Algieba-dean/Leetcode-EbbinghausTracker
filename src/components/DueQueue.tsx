@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Problem, ReviewGrade } from '../types';
 import { ProblemCard } from './ProblemCard';
 import { ZeroInbox } from './ZeroInbox';
@@ -22,20 +22,23 @@ export const DueQueue: React.FC<DueQueueProps> = ({
 }) => {
   const today = getTodayString();
 
-  const dueProblems = problems.filter(
-    (p) => p.nextReviewDate <= today && p.lastReviewedDate !== today
-  );
+  const { sorted, overdueCount } = useMemo(() => {
+    const dueProblems = problems.filter(
+      (p) => p.nextReviewDate <= today && p.lastReviewedDate !== today
+    );
 
-  const sorted = [...dueProblems].sort((a, b) => {
-    const overdueA = diffDays(today, a.nextReviewDate);
-    const overdueB = diffDays(today, b.nextReviewDate);
-    if (overdueA !== overdueB) {
-      return overdueB - overdueA;
-    }
-    return a.nextReviewDate.localeCompare(b.nextReviewDate);
-  });
+    const list = [...dueProblems].sort((a, b) => {
+      const overdueA = diffDays(today, a.nextReviewDate);
+      const overdueB = diffDays(today, b.nextReviewDate);
+      if (overdueA !== overdueB) {
+        return overdueB - overdueA;
+      }
+      return a.nextReviewDate.localeCompare(b.nextReviewDate);
+    });
 
-  const overdueCount = sorted.filter((p) => diffDays(today, p.nextReviewDate) > 0).length;
+    const count = list.filter((p) => diffDays(today, p.nextReviewDate) > 0).length;
+    return { sorted: list, overdueCount: count };
+  }, [problems, today]);
 
   if (sorted.length === 0) {
     return <ZeroInbox onViewLibrary={onViewLibrary} />;

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Problem, ReviewGrade } from '../types';
 import { getTodayString } from '../utils/ebbinghaus';
 import { CheckCircle2, Calendar } from 'lucide-react';
@@ -11,7 +11,10 @@ interface CompletedListProps {
 
 export const CompletedList: React.FC<CompletedListProps> = ({ problems, onRate }) => {
   const today = getTodayString();
-  const completedToday = problems.filter((p) => p.lastReviewedDate === today);
+  const completedToday = useMemo(
+    () => problems.filter((p) => p.lastReviewedDate === today),
+    [problems, today]
+  );
 
   if (completedToday.length === 0) {
     return (

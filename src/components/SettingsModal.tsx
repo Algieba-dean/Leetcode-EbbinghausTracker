@@ -134,11 +134,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 animate-fadeIn">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="settings-modal-title"
+      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 animate-fadeIn"
+    >
       <div className="bg-slate-900 border border-slate-700 rounded-xl w-full max-w-[370px] overflow-hidden shadow-soft max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 shrink-0">
-          <h2 className="text-xs font-semibold text-slate-100">复习算法设置与数据管理</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
+          <h2 id="settings-modal-title" className="text-xs font-semibold text-slate-100">复习算法设置与数据管理</h2>
+          <button
+            onClick={onClose}
+            aria-label="关闭设置窗口"
+            className="text-slate-400 hover:text-white transition-colors rounded p-1 focus-visible:ring-2 focus-visible:ring-emerald-500"
+          >
             <X className="w-4 h-4" />
           </button>
         </div>

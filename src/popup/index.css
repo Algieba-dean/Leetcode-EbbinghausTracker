@@ -31,4 +31,22 @@
     background: rgba(16, 185, 129, 0.25);
     color: #34d399;
   }
+
+  /* Accessible focus indicators */
+  :focus-visible {
+    outline: 2px solid #10b981;
+    outline-offset: 1px;
+  }
+}
+
+/* Reduced motion respect */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
