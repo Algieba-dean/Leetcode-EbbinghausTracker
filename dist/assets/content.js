@@ -1,4 +1,4 @@
-import{g as S,G as D,a as P,D as F}from"./ebbinghaus-BQZyJPW5.js";const A="lc_ebbinghaus_problems",R="lc_ebbinghaus_settings";function C(){const s=window.location.pathname.match(/\/problems\/([^/]+)/),l=s?s[1]:"";let u="",i="",g="Medium";const d=["力扣"],v=document.title||"",h=/^(\d+)[\.\s、]+([^-—|]+)/,w=v.match(h);w&&(u=w[1].trim(),i=w[2].trim());const t=document.querySelector('div[data-cypress="QuestionTitle"]')||document.querySelector(".text-title-large")||document.querySelector("h4");if(t&&t.textContent){const n=t.textContent.trim(),c=n.match(/^(\d+)[\.\s、]+(.+)/);c?(u=c[1].trim(),i=c[2].trim()):i||(i=n)}!i&&l&&(i=l.split("-").map(n=>n.charAt(0).toUpperCase()+n.slice(1)).join(" "));const p=document.body.innerText||"",o=document.querySelector('.text-difficulty-easy, [class*="text-olive"]'),e=document.querySelector('.text-difficulty-hard, [class*="text-pink"]'),f=document.querySelector('.text-difficulty-medium, [class*="text-yellow"]');return o||p.includes("简单")||p.includes("Easy")?g="Easy":e||p.includes("困难")||p.includes("Hard")?g="Hard":(f||p.includes("中等")||p.includes("Medium"))&&(g="Medium"),document.querySelectorAll('a[href*="/tag/"]').forEach(n=>{var a;const c=(a=n.textContent)==null?void 0:a.trim();c&&!d.includes(c)&&d.push(c)}),{slug:l,number:u||"0",title:i,difficulty:g,tags:d}}async function y(){return new Promise(r=>{chrome.storage.local.get([A],s=>{r(s[A]||[])})})}async function H(){return new Promise(r=>{chrome.storage.local.get([R],s=>{const l=s[R];r((l==null?void 0:l.ladder)||F)})})}async function $(r){return new Promise(s=>{chrome.storage.local.set({[A]:r},()=>{chrome.runtime.sendMessage({type:"UPDATE_BADGE"}),s()})})}function q(){if(!window.location.pathname.includes("/problems/")||document.getElementById("lc-ebbinghaus-capsule-host"))return;const r=document.createElement("div");r.id="lc-ebbinghaus-capsule-host",r.style.cssText='position: fixed; bottom: 20px; right: 20px; z-index: 9999999; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;',document.body.appendChild(r);const s=r.attachShadow({mode:"open"}),l=document.createElement("style");l.textContent=`
+(function(){"use strict";const h=[1,2,4,7,15,30,60,120];function y(t=new Date){const r=t.getFullYear(),n=String(t.getMonth()+1).padStart(2,"0"),a=String(t.getDate()).padStart(2,"0");return`${r}-${n}-${a}`}function F(t,r){const n=new Date(t+"T00:00:00");return n.setDate(n.getDate()+r),y(n)}function q(t,r,n=y(),a=h){let o=t.repetition??0,d=t.easeFactor||2.5,s;switch(r){case 1:o=0,s=a[0]||1,d=Math.max(1.3,d-.2);break;case 2:s=a[Math.min(o,a.length-1)]||1,d=Math.max(1.3,d-.15);break;case 3:if(o=o+1,o<a.length)s=a[o];else{const f=a[a.length-1];s=Math.max(f+15,Math.round(t.interval*d))}break;case 4:if(o=o+2,o<a.length)s=a[o];else{const f=a[a.length-1];s=Math.max(f+30,Math.round(t.interval*d*1.3))}d=Math.min(3.5,d+.15);break}const v=F(n,s);return{repetition:o,interval:s,easeFactor:Number(d.toFixed(2)),nextReviewDate:v}}const $={1:{grade:1,name:"重来",sub:"完全卡壳",getNextDays:(t,r,n=h)=>`${n[0]||1}天后`},2:{grade:2,name:"困难",sub:"勉强写出",getNextDays:(t,r,n=h)=>`${n[Math.min(t,n.length-1)]||1}天后`},3:{grade:3,name:"良好",sub:"独立AC",getNextDays:(t,r,n=h)=>{const a=t+1;return a<n.length?`${n[a]}天后`:`${Math.round(r*2.5)}天后`}},4:{grade:4,name:"简单",sub:"秒杀跳阶",getNextDays:(t,r,n=h)=>{const a=t+2;return a<n.length?`${n[a]}天后`:`${Math.round(r*3.2)}天后`}}},z="lc_ebbinghaus_problems",L="lc_ebbinghaus_settings";function R(){const r=window.location.pathname.match(/\/problems\/([^/]+)/),n=r?r[1]:"";let a="",o="",d="Medium";const s=["力扣"],v=document.title||"",f=/^(\d+)[\.\s、]+([^-—|]+)/,S=v.match(f);S&&(a=S[1].trim(),o=S[2].trim());const i=document.querySelector('div[data-cypress="QuestionTitle"]')||document.querySelector(".text-title-large")||document.querySelector("h4");if(i&&i.textContent){const p=i.textContent.trim(),u=p.match(/^(\d+)[\.\s、]+(.+)/);u?(a=u[1].trim(),o=u[2].trim()):o||(o=p)}!o&&n&&(o=n.split("-").map(p=>p.charAt(0).toUpperCase()+p.slice(1)).join(" "));const b=document.body.innerText||"",c=document.querySelector('.text-difficulty-easy, [class*="text-olive"]'),e=document.querySelector('.text-difficulty-hard, [class*="text-pink"]'),m=document.querySelector('.text-difficulty-medium, [class*="text-yellow"]');return c||b.includes("简单")||b.includes("Easy")?d="Easy":e||b.includes("困难")||b.includes("Hard")?d="Hard":(m||b.includes("中等")||b.includes("Medium"))&&(d="Medium"),document.querySelectorAll('a[href*="/tag/"]').forEach(p=>{var l;const u=(l=p.textContent)==null?void 0:l.trim();u&&!s.includes(u)&&s.push(u)}),{slug:n,number:a||"0",title:o,difficulty:d,tags:s}}async function D(){return new Promise(t=>{chrome.storage.local.get([z],r=>{t(r[z]||[])})})}async function I(){return new Promise(t=>{chrome.storage.local.get([L],r=>{const n=r[L];t((n==null?void 0:n.ladder)||h)})})}async function k(t){return new Promise(r=>{chrome.storage.local.set({[z]:t},()=>{chrome.runtime.sendMessage({type:"UPDATE_BADGE"}),r()})})}function C(){if(!window.location.pathname.includes("/problems/")||document.getElementById("lc-ebbinghaus-capsule-host"))return;const t=document.createElement("div");t.id="lc-ebbinghaus-capsule-host",t.style.cssText='position: fixed; bottom: 20px; right: 20px; z-index: 9999999; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;',document.body.appendChild(t);const r=t.attachShadow({mode:"open"}),n=document.createElement("style");n.textContent=`
     * { box-sizing: border-box; margin: 0; padding: 0; }
     
     .capsule-btn {
@@ -196,14 +196,14 @@ import{g as S,G as D,a as P,D as F}from"./ebbinghaus-BQZyJPW5.js";const A="lc_eb
       align-items: center;
       gap: 6px;
     }
-  `,s.appendChild(l);const u=document.createElement("div");s.appendChild(u);let i=!1,g=!1;async function d(){var n,c;const t=C();if(!t.slug)return;const p=await y(),o=await H(),e=p.find(a=>a.slug===t.slug||t.number!=="0"&&a.number===t.number);u.innerHTML="";const f=document.createElement("button");if(f.className=`capsule-btn ${i?"active":""}`,e){const a=S(),b=e.nextReviewDate<=a;f.innerHTML=`
-        <span class="pulse-dot ${b?"amber":""}"></span>
+  `,r.appendChild(n);const a=document.createElement("div");r.appendChild(a);let o=!1,d=!1;async function s(){var p,u;const i=R();if(!i.slug)return;const b=await D(),c=await I(),e=b.find(l=>l.slug===i.slug||i.number!=="0"&&l.number===i.number);a.innerHTML="";const m=document.createElement("button");if(m.className=`capsule-btn ${o?"active":""}`,e){const l=y(),g=e.nextReviewDate<=l;m.innerHTML=`
+        <span class="pulse-dot ${g?"amber":""}"></span>
         <span>🧠 艾宾浩斯: 第${e.repetition+1}阶 (${e.interval}d)</span>
-      `}else f.innerHTML=`
+      `}else m.innerHTML=`
         <span class="pulse-dot"></span>
         <span>🧠 艾宾浩斯: 一键收录</span>
-      `;if(f.onclick=()=>{i=!i,d()},u.appendChild(f),i){const a=document.createElement("div");if(a.className="panel",e){const b=S(),E=e.lastReviewedDate===b;a.innerHTML=`
-          ${g?'<div class="auto-ac-banner">🎉 检测到提交通过！已自动记录。</div>':""}
+      `;if(m.onclick=()=>{o=!o,s()},a.appendChild(m),o){const l=document.createElement("div");if(l.className="panel",e){const g=y(),E=e.lastReviewedDate===g;l.innerHTML=`
+          ${d?'<div class="auto-ac-banner">🎉 检测到提交通过！已自动记录。</div>':""}
 
           <div class="panel-header">
             <div class="title-row">
@@ -211,12 +211,12 @@ import{g as S,G as D,a as P,D as F}from"./ebbinghaus-BQZyJPW5.js";const A="lc_eb
             </div>
             <div style="display: flex; gap: 4px;">
               <span class="badge ${e.difficulty.toLowerCase()}">${e.difficulty}</span>
-              <span class="badge">#${e.number||t.number}</span>
+              <span class="badge">#${e.number||i.number}</span>
             </div>
           </div>
 
           <div style="font-weight: 600; font-size: 12px; margin-bottom: 6px; color: #f1f5f9;">
-            ${e.title||t.title}
+            ${e.title||i.title}
           </div>
 
           <div class="meta-info">
@@ -230,19 +230,19 @@ import{g as S,G as D,a as P,D as F}from"./ebbinghaus-BQZyJPW5.js";const A="lc_eb
             <div class="btn-grid">
               <button class="rate-btn again" data-grade="1">
                 <div>重来</div>
-                <div style="font-size: 9px; opacity: 0.75;">${D[1].getNextDays(e.repetition,e.interval,o)}</div>
+                <div style="font-size: 9px; opacity: 0.75;">${$[1].getNextDays(e.repetition,e.interval,c)}</div>
               </button>
               <button class="rate-btn hard" data-grade="2">
                 <div>困难</div>
-                <div style="font-size: 9px; opacity: 0.75;">${D[2].getNextDays(e.repetition,e.interval,o)}</div>
+                <div style="font-size: 9px; opacity: 0.75;">${$[2].getNextDays(e.repetition,e.interval,c)}</div>
               </button>
               <button class="rate-btn good" data-grade="3">
                 <div>良好</div>
-                <div style="font-size: 9px; opacity: 0.75;">${D[3].getNextDays(e.repetition,e.interval,o)}</div>
+                <div style="font-size: 9px; opacity: 0.75;">${$[3].getNextDays(e.repetition,e.interval,c)}</div>
               </button>
               <button class="rate-btn easy" data-grade="4">
                 <div>简单</div>
-                <div style="font-size: 9px; opacity: 0.75;">${D[4].getNextDays(e.repetition,e.interval,o)}</div>
+                <div style="font-size: 9px; opacity: 0.75;">${$[4].getNextDays(e.repetition,e.interval,c)}</div>
               </button>
             </div>
           `}
@@ -251,19 +251,19 @@ import{g as S,G as D,a as P,D as F}from"./ebbinghaus-BQZyJPW5.js";const A="lc_eb
             <span style="color: #64748b;">艾宾浩斯跟踪中</span>
             <button id="capsule-remove-btn" class="del-btn">从复习库移除此题</button>
           </div>
-        `,a.querySelectorAll(".rate-btn").forEach(k=>{k.addEventListener("click",async x=>{const z=x.currentTarget,L=Number(z.dataset.grade),m=P(e,L,b,o),_={...e,repetition:m.repetition,interval:m.interval,easeFactor:m.easeFactor,nextReviewDate:m.nextReviewDate,lastReviewedDate:b,history:[{id:`log-${Date.now()}`,timestamp:Date.now(),date:b,grade:L,intervalDays:m.interval,repetition:m.repetition,easeFactor:m.easeFactor},...e.history||[]]},T=await y(),M=T.findIndex(N=>N.id===e.id);M>=0&&(T[M]=_),await $(T),d()})}),(n=a.querySelector("#capsule-remove-btn"))==null||n.addEventListener("click",async()=>{if(confirm(`确定从艾宾浩斯复习库中移除题目 #${e.number} ${e.title} 吗？`)){const x=(await y()).filter(z=>z.id!==e.id);await $(x),d()}})}else a.innerHTML=`
+        `,l.querySelectorAll(".rate-btn").forEach(M=>{M.addEventListener("click",async w=>{const T=w.currentTarget,N=Number(T.dataset.grade),x=q(e,N,g,c),P={...e,repetition:x.repetition,interval:x.interval,easeFactor:x.easeFactor,nextReviewDate:x.nextReviewDate,lastReviewedDate:g,history:[{id:`log-${Date.now()}`,timestamp:Date.now(),date:g,grade:N,intervalDays:x.interval,repetition:x.repetition,easeFactor:x.easeFactor},...e.history||[]]},A=await D(),_=A.findIndex(H=>H.id===e.id);_>=0&&(A[_]=P),await k(A),s()})}),(p=l.querySelector("#capsule-remove-btn"))==null||p.addEventListener("click",async()=>{if(confirm(`确定从艾宾浩斯复习库中移除题目 #${e.number} ${e.title} 吗？`)){const w=(await D()).filter(T=>T.id!==e.id);await k(w),s()}})}else l.innerHTML=`
           <div class="panel-header">
             <div class="title-row">
               <span>🧠 艾宾浩斯复习计划</span>
             </div>
             <div style="display: flex; gap: 4px;">
-              <span class="badge ${t.difficulty.toLowerCase()}">${t.difficulty}</span>
-              <span class="badge">#${t.number}</span>
+              <span class="badge ${i.difficulty.toLowerCase()}">${i.difficulty}</span>
+              <span class="badge">#${i.number}</span>
             </div>
           </div>
 
           <div style="font-weight: 600; font-size: 12px; margin-bottom: 6px; color: #f1f5f9;">
-            ${t.title}
+            ${i.title}
           </div>
 
           <p style="color: #94a3b8; font-size: 11px; margin-bottom: 8px; line-height: 1.4;">
@@ -275,4 +275,4 @@ import{g as S,G as D,a as P,D as F}from"./ebbinghaus-BQZyJPW5.js";const A="lc_eb
           <button id="capsule-submit-add" class="add-action-btn">
             <span>🚀 一键纳入艾宾浩斯复习</span>
           </button>
-        `,(c=a.querySelector("#capsule-submit-add"))==null||c.addEventListener("click",async()=>{const b=a.querySelector("#capsule-notes-input"),E=b?b.value.trim():"",k={id:`lc-${t.slug||Date.now()}`,number:t.number,title:t.title||t.slug,slug:t.slug,url:window.location.href,difficulty:t.difficulty,tags:t.tags,notes:E,createdAt:Date.now(),repetition:0,interval:1,easeFactor:2.5,nextReviewDate:S(),isSample:!1,history:[]},x=await y();x.unshift(k),await $(x),d()});u.appendChild(a)}}d();let v=window.location.href;setInterval(()=>{window.location.href!==v&&(v=window.location.href,g=!1,d())},1200);let h=!1;new MutationObserver(async()=>{const t=document.body.innerText||"";if((t.includes("通过")||t.includes("Accepted")||!!document.querySelector('[data-e2e-locator="submission-result"]'))&&!h){h=!0;const o=C();if(o.slug){const e=await y();if(!e.find(n=>n.slug===o.slug)){const n={id:`lc-${o.slug||Date.now()}`,number:o.number,title:o.title||o.slug,slug:o.slug,url:window.location.href,difficulty:o.difficulty,tags:o.tags,notes:"做题自动通过收录",createdAt:Date.now(),repetition:0,interval:1,easeFactor:2.5,nextReviewDate:S(),isSample:!1,history:[]};e.unshift(n),await $(e),g=!0,i=!0,d()}}}}).observe(document.body,{childList:!0,subtree:!0})}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",q):q();
+        `,(u=l.querySelector("#capsule-submit-add"))==null||u.addEventListener("click",async()=>{const g=l.querySelector("#capsule-notes-input"),E=g?g.value.trim():"",M={id:`lc-${i.slug||Date.now()}`,number:i.number,title:i.title||i.slug,slug:i.slug,url:window.location.href,difficulty:i.difficulty,tags:i.tags,notes:E,createdAt:Date.now(),repetition:0,interval:1,easeFactor:2.5,nextReviewDate:y(),isSample:!1,history:[]},w=await D();w.unshift(M),await k(w),s()});a.appendChild(l)}}s();let v=window.location.href;setInterval(()=>{window.location.href!==v&&(v=window.location.href,d=!1,s())},1200);let f=!1;new MutationObserver(async()=>{const i=document.body.innerText||"";if((i.includes("通过")||i.includes("Accepted")||!!document.querySelector('[data-e2e-locator="submission-result"]'))&&!f){f=!0;const c=R();if(c.slug){const e=await D();if(!e.find(p=>p.slug===c.slug)){const p={id:`lc-${c.slug||Date.now()}`,number:c.number,title:c.title||c.slug,slug:c.slug,url:window.location.href,difficulty:c.difficulty,tags:c.tags,notes:"做题自动通过收录",createdAt:Date.now(),repetition:0,interval:1,easeFactor:2.5,nextReviewDate:y(),isSample:!1,history:[]};e.unshift(p),await k(e),d=!0,o=!0,s()}}}}).observe(document.body,{childList:!0,subtree:!0})}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",C):C()})();
