@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Problem, ReviewGrade } from '../types';
 import { GRADE_CONFIG, calculateRetentionRate, diffDays, getTodayString } from '../utils/ebbinghaus';
+import { isSampleProblem } from '../utils/storage';
 import { ExternalLink, Lightbulb, ChevronDown, ChevronUp, Sparkles, Check, Trash2 } from 'lucide-react';
 
 interface ProblemCardProps {
@@ -111,7 +112,7 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
                 {tag}
               </span>
             ))}
-            {problem.isSample && (
+            {isSampleProblem(problem) && (
               <span className="px-1 py-0.2 rounded bg-slate-800 text-slate-400 text-[9px] border border-slate-700/50">
                 示例
               </span>

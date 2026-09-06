@@ -137,6 +137,21 @@ export const INITIAL_SAMPLE_PROBLEMS: Problem[] = [
   },
 ];
 
+export const SAMPLE_PROBLEM_IDS = new Set(['lc-206', 'lc-15', 'lc-42', 'lc-1']);
+
+export function isSampleProblem(p: Problem): boolean {
+  if (p.isSample === true) return true;
+  if (SAMPLE_PROBLEM_IDS.has(p.id)) return true;
+  // Also check notes & numbers of the known initial demo problems
+  if (p.notes) {
+    if (p.notes.includes('双指针迭代法中的 prev 初始化为 null')) return true;
+    if (p.notes.includes('先整体排序！外层固定 i')) return true;
+    if (p.notes.includes('双指针法最优：leftMax 和 rightMax')) return true;
+    if (p.notes.includes('HashMap 边查边存，空间换时间')) return true;
+  }
+  return false;
+}
+
 const STORAGE_KEY_INITIALIZED = 'lc_ebbinghaus_initialized';
 
 export async function getProblems(): Promise<Problem[]> {
@@ -180,12 +195,14 @@ export async function deleteProblem(id: string): Promise<void> {
   notifyBadgeUpdate();
 }
 
-export async function clearSampleProblems(): Promise<void> {
+export async function clearSampleProblems(): Promise<number> {
   const list = await getProblems();
-  const filtered = list.filter((p) => !p.isSample);
+  const filtered = list.filter((p) => !isSampleProblem(p));
+  const removedCount = list.length - filtered.length;
   await setItem(STORAGE_KEY_INITIALIZED, true);
   await setItem(STORAGE_KEY_PROBLEMS, filtered);
   notifyBadgeUpdate();
+  return removedCount;
 }
 
 export async function clearAllProblems(): Promise<void> {

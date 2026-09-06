@@ -105,16 +105,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const handleClearSample = async () => {
     if (confirm('确定清除预设的示例题目吗？(您自己添加的题目将被保留)')) {
-      await clearSampleProblems();
-      onDataChanged();
-      setStatusMsg('已清除初始预置示例题目！');
+      const removedCount = await clearSampleProblems();
+      await onDataChanged();
+      if (removedCount > 0) {
+        setStatusMsg(`已成功清除 ${removedCount} 道初始预置示例题目！`);
+      } else {
+        setStatusMsg('题库中没有检测到预设的示例题目。');
+      }
     }
   };
 
   const handleClearAll = async () => {
     if (confirm('⚠️ 警告：确定清空全部题库吗？该操作不可撤销，建议先导出备份！')) {
       await clearAllProblems();
-      onDataChanged();
+      await onDataChanged();
       setStatusMsg('题库已全部清空！');
     }
   };
@@ -124,7 +128,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       for (const p of INITIAL_SAMPLE_PROBLEMS) {
         await saveProblem(p);
       }
-      onDataChanged();
+      await onDataChanged();
       setStatusMsg('已载入演示数据！');
     }
   };
