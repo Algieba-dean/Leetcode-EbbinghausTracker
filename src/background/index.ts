@@ -52,7 +52,12 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 // Listen for messages from popup or content script
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type === 'UPDATE_BADGE') {
-    updateBadge();
-    sendResponse({ success: true });
+    updateBadge()
+      .then(() => sendResponse({ success: true }))
+      .catch((err) => {
+        console.error('Badge update failed:', err);
+        sendResponse({ success: false });
+      });
+    return true; // Keep message channel open for async response
   }
 });

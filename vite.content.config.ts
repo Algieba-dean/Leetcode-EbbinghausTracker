@@ -5,6 +5,8 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: false,
+    minify: false,
+    sourcemap: 'inline',
     lib: {
       entry: resolve(__dirname, 'src/content/index.ts'),
       name: 'LeetCodeContentScript',

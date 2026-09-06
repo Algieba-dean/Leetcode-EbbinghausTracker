@@ -83,29 +83,77 @@ function extractProblemFromPage(): PageMeta {
   return { slug, number: number || '0', title, difficulty, tags };
 }
 
-async function getStoredProblems(): Promise<Problem[]> {
-  return new Promise((resolve) => {
-    chrome.storage.local.get([STORAGE_KEY_PROBLEMS], (res) => {
-      resolve(res[STORAGE_KEY_PROBLEMS] || []);
+function isExtensionValid(): boolean {
+  try {
+    return typeof chrome !== 'undefined' && !!chrome.runtime && !!chrome.runtime.id;
+  } catch {
+    return false;
+  }
+}
+
+function safeSendMessage(message: { type: string; [key: string]: any }): void {
+  if (!isExtensionValid()) return;
+  try {
+    chrome.runtime.sendMessage(message, () => {
+      if (chrome.runtime.lastError) {
+        // Cleanly swallow any disconnected port/worker errors
+      }
     });
+  } catch {
+    // Ignore context invalidation
+  }
+}
+
+async function getStoredProblems(): Promise<Problem[]> {
+  if (!isExtensionValid()) return [];
+  return new Promise((resolve) => {
+    try {
+      chrome.storage.local.get([STORAGE_KEY_PROBLEMS], (res) => {
+        if (chrome.runtime.lastError) {
+          resolve([]);
+          return;
+        }
+        resolve(res[STORAGE_KEY_PROBLEMS] || []);
+      });
+    } catch {
+      resolve([]);
+    }
   });
 }
 
 async function getStoredLadder(): Promise<number[]> {
+  if (!isExtensionValid()) return DEFAULT_EBBINGHAUS_LADDER;
   return new Promise((resolve) => {
-    chrome.storage.local.get([STORAGE_KEY_SETTINGS], (res) => {
-      const s = res[STORAGE_KEY_SETTINGS];
-      resolve(s?.ladder || DEFAULT_EBBINGHAUS_LADDER);
-    });
+    try {
+      chrome.storage.local.get([STORAGE_KEY_SETTINGS], (res) => {
+        if (chrome.runtime.lastError) {
+          resolve(DEFAULT_EBBINGHAUS_LADDER);
+          return;
+        }
+        const s = res[STORAGE_KEY_SETTINGS];
+        resolve(s?.ladder || DEFAULT_EBBINGHAUS_LADDER);
+      });
+    } catch {
+      resolve(DEFAULT_EBBINGHAUS_LADDER);
+    }
   });
 }
 
 async function saveStoredProblems(list: Problem[]): Promise<void> {
+  if (!isExtensionValid()) return;
   return new Promise((resolve) => {
-    chrome.storage.local.set({ [STORAGE_KEY_PROBLEMS]: list }, () => {
-      chrome.runtime.sendMessage({ type: 'UPDATE_BADGE' });
+    try {
+      chrome.storage.local.set({ [STORAGE_KEY_PROBLEMS]: list }, () => {
+        if (chrome.runtime.lastError) {
+          resolve();
+          return;
+        }
+        safeSendMessage({ type: 'UPDATE_BADGE' });
+        resolve();
+      });
+    } catch {
       resolve();
-    });
+    }
   });
 }
 
@@ -535,12 +583,41 @@ function initCapsule(): void {
 
   render();
 
+  // Accurate AC check that avoids false positives like "通过率" or "通过次数"
+  function checkSubmissionAccepted(): boolean {
+    const resultLocator = document.querySelector('[data-e2e-locator="submission-result"]');
+    if (resultLocator) {
+      const text = (resultLocator.textContent || '').trim();
+      if (text === '通过' || text === 'Accepted' || text.startsWith('通过\n') || text.startsWith('Accepted\n')) {
+        return true;
+      }
+    }
+
+    const resultBadges = document.querySelectorAll(
+      '[class*="text-green"], [class*="text-olive"], [data-cypress*="submission"], [class*="status-success"]'
+    );
+    for (const el of resultBadges) {
+      const text = (el.textContent || '').trim();
+      if (text === '通过' || text === 'Accepted') {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   // Watch for LeetCode Single Page App client-side route changes
   let lastUrl = window.location.href;
-  setInterval(() => {
+  const timer = setInterval(() => {
+    if (!isExtensionValid()) {
+      clearInterval(timer);
+      observer.disconnect();
+      return;
+    }
     if (window.location.href !== lastUrl) {
       lastUrl = window.location.href;
       autoAcNotified = false;
+      acHandled = false;
       render();
     }
   }, 1200);
@@ -548,20 +625,22 @@ function initCapsule(): void {
   // Auto AC (Accepted / 通过) Detection via MutationObserver
   let acHandled = false;
   const observer = new MutationObserver(async () => {
-    const text = document.body.innerText || '';
-    const hasAccepted =
-      text.includes('通过') ||
-      text.includes('Accepted') ||
-      !!document.querySelector('[data-e2e-locator="submission-result"]');
+    if (!isExtensionValid()) {
+      observer.disconnect();
+      clearInterval(timer);
+      return;
+    }
 
-    if (hasAccepted && !acHandled) {
+    if (acHandled) return;
+
+    if (checkSubmissionAccepted()) {
       acHandled = true;
       const meta = extractProblemFromPage();
       if (meta.slug) {
         const list = await getStoredProblems();
         const existing = list.find((p) => p.slug === meta.slug);
         if (!existing) {
-          // Auto add on AC!
+          // Auto add on real submission AC
           const newProblem: Problem = {
             id: `lc-${meta.slug || Date.now()}`,
             number: meta.number || '0',
@@ -570,7 +649,7 @@ function initCapsule(): void {
             url: window.location.href,
             difficulty: meta.difficulty,
             tags: meta.tags,
-            notes: '做题自动通过收录',
+            notes: '做题提交通过，自动收录',
             createdAt: Date.now(),
             repetition: 0,
             interval: 1,
@@ -589,7 +668,9 @@ function initCapsule(): void {
     }
   });
 
-  observer.observe(document.body, { childList: true, subtree: true });
+  if (document.body) {
+    observer.observe(document.body, { childList: true, subtree: true });
+  }
 }
 
 if (document.readyState === 'loading') {
