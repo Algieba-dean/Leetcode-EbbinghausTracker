@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Problem, ReviewGrade } from '../types';
+import { Problem, ReviewGrade, UserSettings } from '../types';
 import {
   getProblems,
   recordReview,
   saveProblem,
   deleteProblem,
   computeDailySummary,
+  getSettings,
 } from '../utils/storage';
 import { Header } from '../components/Header';
 import { DueQueue } from '../components/DueQueue';
@@ -17,6 +18,7 @@ import { SettingsModal } from '../components/SettingsModal';
 
 export const App: React.FC = () => {
   const [problems, setProblems] = useState<Problem[]>([]);
+  const [settings, setSettings] = useState<UserSettings | null>(null);
   const [activeTab, setActiveTab] = useState<'due' | 'completed' | 'library' | 'calendar'>('due');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
@@ -24,8 +26,9 @@ export const App: React.FC = () => {
 
   const refreshData = useCallback(async () => {
     try {
-      const list = await getProblems();
+      const [list, s] = await Promise.all([getProblems(), getSettings()]);
       setProblems(list);
+      setSettings(s);
     } finally {
       setLoading(false);
     }
@@ -74,7 +77,9 @@ export const App: React.FC = () => {
               <DueQueue
                 problems={problems}
                 onRate={handleRate}
+                onDelete={handleDeleteProblem}
                 onViewLibrary={() => setActiveTab('library')}
+                ladder={settings?.ladder}
               />
             )}
 

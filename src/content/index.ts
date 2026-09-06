@@ -1,43 +1,101 @@
-// Content Script for LeetCode pages (leetcode.cn / leetcode.com)
-// Injected via Shadow DOM to prevent any CSS collision with LeetCode.
+// Content Script for LeetCode (leetcode.cn / leetcode.com)
+// Built with Shadow DOM for complete CSS isolation and robust LeetCode DOM parsing.
 
 import { Problem, ReviewGrade, Difficulty } from '../types';
-import { calculateSM2, getTodayString } from '../utils/ebbinghaus';
+import { calculateSM2, getTodayString, DEFAULT_EBBINGHAUS_LADDER, GRADE_CONFIG } from '../utils/ebbinghaus';
 
 const STORAGE_KEY_PROBLEMS = 'lc_ebbinghaus_problems';
+const STORAGE_KEY_SETTINGS = 'lc_ebbinghaus_settings';
 
-function extractProblemFromPage(): { slug: string; number: string; title: string; difficulty: Difficulty } {
-  const pathname = window.location.pathname; // /problems/reverse-linked-list/
+interface PageMeta {
+  slug: string;
+  number: string;
+  title: string;
+  difficulty: Difficulty;
+  tags: string[];
+}
+
+function extractProblemFromPage(): PageMeta {
+  const pathname = window.location.pathname;
   const match = pathname.match(/\/problems\/([^/]+)/);
   const slug = match ? match[1] : '';
 
-  // Extract from title: "206. 反转链表 - 力扣（LeetCode）"
-  const docTitle = document.title || '';
-  const titleMatch = docTitle.match(/^(\d+)\.\s*([^-—|]+)/);
-
   let number = '';
-  let title = slug;
+  let title = '';
+  let difficulty: Difficulty = 'Medium';
+  const tags: string[] = ['力扣'];
+
+  // 1. Try extracting from document.title: "1. 两数之和 - 力扣（LeetCode）" or "1. Two Sum - LeetCode"
+  const docTitle = document.title || '';
+  const titleRegex = /^(\d+)[\.\s、]+([^-—|]+)/;
+  const titleMatch = docTitle.match(titleRegex);
+
   if (titleMatch) {
-    number = titleMatch[1];
+    number = titleMatch[1].trim();
     title = titleMatch[2].trim();
   }
 
-  // Difficulty fallback or heuristic
-  let difficulty: Difficulty = 'Medium';
-  const textContent = document.body.innerText || '';
-  if (textContent.includes('简单') || textContent.includes('Easy')) {
-    difficulty = 'Easy';
-  } else if (textContent.includes('困难') || textContent.includes('Hard')) {
-    difficulty = 'Hard';
+  // 2. DOM extraction heuristics for modern LeetCode
+  const titleElem =
+    document.querySelector('div[data-cypress="QuestionTitle"]') ||
+    document.querySelector('.text-title-large') ||
+    document.querySelector('h4');
+
+  if (titleElem && titleElem.textContent) {
+    const raw = titleElem.textContent.trim();
+    const domMatch = raw.match(/^(\d+)[\.\s、]+(.+)/);
+    if (domMatch) {
+      number = domMatch[1].trim();
+      title = domMatch[2].trim();
+    } else if (!title) {
+      title = raw;
+    }
   }
 
-  return { slug, number, title, difficulty };
+  // Fallback title to slug if still empty
+  if (!title && slug) {
+    title = slug
+      .split('-')
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
+  }
+
+  // 3. Difficulty extraction
+  const pageText = document.body.innerText || '';
+  const easyElem = document.querySelector('.text-difficulty-easy, [class*="text-olive"]');
+  const hardElem = document.querySelector('.text-difficulty-hard, [class*="text-pink"]');
+  const mediumElem = document.querySelector('.text-difficulty-medium, [class*="text-yellow"]');
+
+  if (easyElem || pageText.includes('简单') || pageText.includes('Easy')) {
+    difficulty = 'Easy';
+  } else if (hardElem || pageText.includes('困难') || pageText.includes('Hard')) {
+    difficulty = 'Hard';
+  } else if (mediumElem || pageText.includes('中等') || pageText.includes('Medium')) {
+    difficulty = 'Medium';
+  }
+
+  // 4. Tags extraction
+  document.querySelectorAll('a[href*="/tag/"]').forEach((el) => {
+    const text = el.textContent?.trim();
+    if (text && !tags.includes(text)) tags.push(text);
+  });
+
+  return { slug, number: number || '0', title, difficulty, tags };
 }
 
 async function getStoredProblems(): Promise<Problem[]> {
   return new Promise((resolve) => {
     chrome.storage.local.get([STORAGE_KEY_PROBLEMS], (res) => {
       resolve(res[STORAGE_KEY_PROBLEMS] || []);
+    });
+  });
+}
+
+async function getStoredLadder(): Promise<number[]> {
+  return new Promise((resolve) => {
+    chrome.storage.local.get([STORAGE_KEY_SETTINGS], (res) => {
+      const s = res[STORAGE_KEY_SETTINGS];
+      resolve(s?.ladder || DEFAULT_EBBINGHAUS_LADDER);
     });
   });
 }
@@ -51,72 +109,125 @@ async function saveStoredProblems(list: Problem[]): Promise<void> {
   });
 }
 
-function renderFloatingWidget(): void {
-  // Prevent duplicate injection
+function initCapsule(): void {
+  // Only run on actual problem detail pages
+  if (!window.location.pathname.includes('/problems/')) return;
   if (document.getElementById('lc-ebbinghaus-capsule-host')) return;
 
   const host = document.createElement('div');
   host.id = 'lc-ebbinghaus-capsule-host';
-  host.style.cssText = 'position: fixed; bottom: 24px; right: 24px; z-index: 999999; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;';
+  host.style.cssText =
+    'position: fixed; bottom: 20px; right: 20px; z-index: 9999999; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;';
   document.body.appendChild(host);
 
   const shadow = host.attachShadow({ mode: 'open' });
 
-  // Stylesheet inside Shadow Root
   const style = document.createElement('style');
   style.textContent = `
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    .card {
+    
+    .capsule-btn {
       background: #0f172a;
       border: 1px solid #334155;
-      border-radius: 12px;
-      padding: 12px 14px;
       color: #f8fafc;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 15px -3px rgba(16, 185, 129, 0.15);
-      width: 290px;
+      border-radius: 9999px;
+      padding: 7px 14px;
       font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
       transition: all 0.2s ease;
       user-select: none;
     }
-    .header {
+    .capsule-btn:hover {
+      border-color: #10b981;
+      transform: translateY(-1px);
+    }
+    .capsule-btn.active {
+      border-color: #10b981;
+      background: #020617;
+    }
+    .pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 8px #10b981;
+    }
+    .pulse-dot.amber {
+      background: #f59e0b;
+      box-shadow: 0 0 8px #f59e0b;
+    }
+
+    .panel {
+      position: absolute;
+      bottom: 44px;
+      right: 0;
+      width: 310px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 14px;
+      color: #f8fafc;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6), 0 0 15px rgba(16, 185, 129, 0.15);
+      font-size: 12px;
+      animation: fadeIn 0.18s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .panel-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
       margin-bottom: 8px;
     }
-    .brand {
+    .title-row {
       display: flex;
       align-items: center;
       gap: 6px;
       font-weight: 600;
       color: #34d399;
-      font-size: 12px;
     }
     .badge {
       font-size: 10px;
-      padding: 2px 6px;
+      font-family: monospace;
+      padding: 1px 6px;
       border-radius: 4px;
       background: #1e293b;
       border: 1px solid #475569;
       color: #cbd5e1;
-      font-family: monospace;
     }
-    .info {
+    .badge.easy { color: #34d399; border-color: rgba(52, 211, 153, 0.3); background: rgba(52, 211, 153, 0.1); }
+    .badge.medium { color: #fbbf24; border-color: rgba(251, 191, 36, 0.3); background: rgba(251, 191, 36, 0.1); }
+    .badge.hard { color: #f87171; border-color: rgba(248, 113, 113, 0.3); background: rgba(248, 113, 113, 0.1); }
+
+    .meta-info {
       font-size: 11px;
       color: #94a3b8;
-      margin-bottom: 8px;
-      line-height: 1.4;
+      line-height: 1.5;
+      margin-bottom: 10px;
+      background: #020617;
+      padding: 8px 10px;
+      border-radius: 6px;
+      border: 1px solid #1e293b;
     }
-    .info strong {
+    .meta-info strong {
       color: #e2e8f0;
     }
-    .btn-group {
+
+    .btn-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 4px;
+      gap: 5px;
       margin-top: 6px;
     }
-    .btn-rate {
+    .rate-btn {
       background: #1e293b;
       border: 1px solid #334155;
       color: #e2e8f0;
@@ -127,46 +238,71 @@ function renderFloatingWidget(): void {
       text-align: center;
       transition: all 0.15s ease;
     }
-    .btn-rate:hover { filter: brightness(1.2); }
-    .btn-rate.again { border-color: rgba(239, 68, 68, 0.4); color: #f87171; background: rgba(239, 68, 68, 0.1); }
-    .btn-rate.hard { border-color: rgba(245, 158, 11, 0.4); color: #fbbf24; background: rgba(245, 158, 11, 0.1); }
-    .btn-rate.good { border-color: rgba(16, 185, 129, 0.4); color: #34d399; background: rgba(16, 185, 129, 0.1); }
-    .btn-rate.easy { border-color: rgba(14, 165, 233, 0.4); color: #38bdf8; background: rgba(14, 165, 233, 0.1); }
-    .btn-add {
+    .rate-btn:hover { filter: brightness(1.25); transform: translateY(-1px); }
+    .rate-btn.again { border-color: rgba(239, 68, 68, 0.4); color: #f87171; background: rgba(239, 68, 68, 0.1); }
+    .rate-btn.hard { border-color: rgba(245, 158, 11, 0.4); color: #fbbf24; background: rgba(245, 158, 11, 0.1); }
+    .rate-btn.good { border-color: rgba(16, 185, 129, 0.4); color: #34d399; background: rgba(16, 185, 129, 0.1); }
+    .rate-btn.easy { border-color: rgba(14, 165, 233, 0.4); color: #38bdf8; background: rgba(14, 165, 233, 0.1); }
+
+    .add-action-btn {
       width: 100%;
       background: #059669;
       color: #fff;
       border: none;
       border-radius: 6px;
-      padding: 7px 10px;
-      font-weight: 500;
+      padding: 8px 10px;
+      font-weight: 600;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 4px;
+      gap: 5px;
       font-size: 11px;
       transition: background 0.15s;
     }
-    .btn-add:hover { background: #10b981; }
-    .notes-input {
+    .add-action-btn:hover { background: #10b981; }
+
+    .textarea-notes {
       width: 100%;
       background: #020617;
       border: 1px solid #334155;
       color: #f8fafc;
       border-radius: 6px;
-      padding: 6px 8px;
+      padding: 7px 8px;
       font-size: 11px;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
       outline: none;
+      resize: vertical;
+      min-height: 48px;
+      font-family: inherit;
     }
-    .notes-input:focus { border-color: #10b981; }
-    .success-pill {
+    .textarea-notes:focus { border-color: #10b981; }
+
+    .footer-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px solid #1e293b;
+      font-size: 10px;
+    }
+    .del-btn {
+      color: #f87171;
+      background: none;
+      border: none;
+      cursor: pointer;
+      text-decoration: underline;
+      opacity: 0.8;
+    }
+    .del-btn:hover { opacity: 1; }
+    
+    .done-banner {
       background: rgba(16, 185, 129, 0.15);
       border: 1px solid rgba(16, 185, 129, 0.3);
       color: #34d399;
       border-radius: 6px;
-      padding: 6px;
+      padding: 7px;
       text-align: center;
       font-weight: 500;
       font-size: 11px;
@@ -174,143 +310,229 @@ function renderFloatingWidget(): void {
   `;
   shadow.appendChild(style);
 
-  const container = document.createElement('div');
-  container.className = 'card';
-  shadow.appendChild(container);
+  const wrapper = document.createElement('div');
+  shadow.appendChild(wrapper);
 
-  async function updateView() {
+  let isExpanded = false;
+
+  async function render() {
     const meta = extractProblemFromPage();
     if (!meta.slug) return;
 
     const problems = await getStoredProblems();
-    const existing = problems.find((p) => p.slug === meta.slug || (meta.number && p.number === meta.number));
+    const ladder = await getStoredLadder();
+    const existing = problems.find(
+      (p) => p.slug === meta.slug || (meta.number !== '0' && p.number === meta.number)
+    );
+
+    wrapper.innerHTML = '';
+
+    // 1. Floating Pill Button
+    const pill = document.createElement('button');
+    pill.className = `capsule-btn ${isExpanded ? 'active' : ''}`;
 
     if (existing) {
       const today = getTodayString();
-      const isReviewed = existing.lastReviewedDate === today;
-
-      container.innerHTML = `
-        <div class="header">
-          <div class="brand">
-            <span>🧠 艾宾浩斯复习</span>
-          </div>
-          <span class="badge">#${existing.number || meta.number || ''}</span>
-        </div>
-        <div class="info">
-          轮次: <strong>第 ${existing.repetition + 1} 轮</strong> · 间隔 <strong>${existing.interval} 天</strong><br>
-          ${isReviewed ? `<span style="color: #34d399">✅ 今日已复习 (下次: ${existing.nextReviewDate})</span>` : `下次复习: <strong>${existing.nextReviewDate}</strong>`}
-        </div>
-        ${
-          isReviewed
-            ? `<div class="success-pill">🎉 记忆已刷新！</div>`
-            : `
-          <div style="font-size: 10px; color: #94a3b8; margin-bottom: 4px;">做完题目后一键评定：</div>
-          <div class="btn-group">
-            <button class="btn-rate again" data-grade="1">重来</button>
-            <button class="btn-rate hard" data-grade="2">困难</button>
-            <button class="btn-rate good" data-grade="3">良好</button>
-            <button class="btn-rate easy" data-grade="4">熟练</button>
-          </div>
-        `
-        }
+      const isDue = existing.nextReviewDate <= today;
+      pill.innerHTML = `
+        <span class="pulse-dot ${isDue ? 'amber' : ''}"></span>
+        <span>🧠 艾宾浩斯: 第${existing.repetition + 1}阶 (${existing.interval}d)</span>
       `;
+    } else {
+      pill.innerHTML = `
+        <span class="pulse-dot"></span>
+        <span>🧠 艾宾浩斯: + 纳入复习</span>
+      `;
+    }
 
-      container.querySelectorAll('.btn-rate').forEach((btn) => {
-        btn.addEventListener('click', async (e) => {
-          const target = e.currentTarget as HTMLElement;
-          const grade = Number(target.dataset.grade) as ReviewGrade;
-          const update = calculateSM2(existing, grade, today);
+    pill.onclick = () => {
+      isExpanded = !isExpanded;
+      render();
+    };
+    wrapper.appendChild(pill);
 
-          const updated: Problem = {
-            ...existing,
-            repetition: update.repetition,
-            interval: update.interval,
-            easeFactor: update.easeFactor,
-            nextReviewDate: update.nextReviewDate,
-            lastReviewedDate: today,
-            history: [
-              {
-                id: `log-${Date.now()}`,
-                timestamp: Date.now(),
-                date: today,
-                grade,
-                intervalDays: update.interval,
-                repetition: update.repetition,
-                easeFactor: update.easeFactor,
-              },
-              ...(existing.history || []),
-            ],
+    // 2. Expanded Floating Panel
+    if (isExpanded) {
+      const panel = document.createElement('div');
+      panel.className = 'panel';
+
+      if (existing) {
+        const today = getTodayString();
+        const isReviewedToday = existing.lastReviewedDate === today;
+
+        panel.innerHTML = `
+          <div class="panel-header">
+            <div class="title-row">
+              <span>🧠 艾宾浩斯复习</span>
+            </div>
+            <div style="display: flex; gap: 4px;">
+              <span class="badge ${existing.difficulty.toLowerCase()}">${existing.difficulty}</span>
+              <span class="badge">#${existing.number || meta.number}</span>
+            </div>
+          </div>
+
+          <div style="font-weight: 600; font-size: 12px; margin-bottom: 6px; color: #f1f5f9;">
+            ${existing.title || meta.title}
+          </div>
+
+          <div class="meta-info">
+            <div>当前阶段：<strong>第 ${existing.repetition + 1} 阶</strong> (间隔 ${existing.interval} 天)</div>
+            <div>下次复习：<strong>${existing.nextReviewDate}</strong></div>
+            ${isReviewedToday ? `<div style="color: #34d399; margin-top: 3px;">✅ 今日复习已打卡！</div>` : `<div style="color: #f59e0b; margin-top: 3px;">⏱️ 今日待做题并评定</div>`}
+          </div>
+
+          ${
+            isReviewedToday
+              ? `<div class="done-banner">🎉 今日掌握度已更新！</div>`
+              : `
+            <div style="font-size: 11px; color: #94a3b8; margin-bottom: 4px;">做完后根据记忆熟练度评定：</div>
+            <div class="btn-grid">
+              <button class="rate-btn again" data-grade="1">
+                <div>重来</div>
+                <div style="font-size: 9px; opacity: 0.75;">${GRADE_CONFIG[1].getNextDays(existing.repetition, existing.interval, ladder)}</div>
+              </button>
+              <button class="rate-btn hard" data-grade="2">
+                <div>困难</div>
+                <div style="font-size: 9px; opacity: 0.75;">${GRADE_CONFIG[2].getNextDays(existing.repetition, existing.interval, ladder)}</div>
+              </button>
+              <button class="rate-btn good" data-grade="3">
+                <div>良好</div>
+                <div style="font-size: 9px; opacity: 0.75;">${GRADE_CONFIG[3].getNextDays(existing.repetition, existing.interval, ladder)}</div>
+              </button>
+              <button class="rate-btn easy" data-grade="4">
+                <div>简单</div>
+                <div style="font-size: 9px; opacity: 0.75;">${GRADE_CONFIG[4].getNextDays(existing.repetition, existing.interval, ladder)}</div>
+              </button>
+            </div>
+          `
+          }
+
+          <div class="footer-actions">
+            <span style="color: #64748b;">艾宾浩斯跟踪中</span>
+            <button id="capsule-remove-btn" class="del-btn">从复习库移除此题</button>
+          </div>
+        `;
+
+        // Bind rating clicks
+        panel.querySelectorAll('.rate-btn').forEach((btn) => {
+          btn.addEventListener('click', async (e) => {
+            const btnEl = e.currentTarget as HTMLElement;
+            const grade = Number(btnEl.dataset.grade) as ReviewGrade;
+            const update = calculateSM2(existing, grade, today, ladder);
+
+            const updated: Problem = {
+              ...existing,
+              repetition: update.repetition,
+              interval: update.interval,
+              easeFactor: update.easeFactor,
+              nextReviewDate: update.nextReviewDate,
+              lastReviewedDate: today,
+              history: [
+                {
+                  id: `log-${Date.now()}`,
+                  timestamp: Date.now(),
+                  date: today,
+                  grade,
+                  intervalDays: update.interval,
+                  repetition: update.repetition,
+                  easeFactor: update.easeFactor,
+                },
+                ...(existing.history || []),
+              ],
+            };
+
+            const list = await getStoredProblems();
+            const idx = list.findIndex((p) => p.id === existing.id);
+            if (idx >= 0) list[idx] = updated;
+            await saveStoredProblems(list);
+            render();
+          });
+        });
+
+        // Bind delete click directly on LeetCode page!
+        panel.querySelector('#capsule-remove-btn')?.addEventListener('click', async () => {
+          if (confirm(`确定从艾宾浩斯复习库中移除题目 #${existing.number} ${existing.title} 吗？`)) {
+            const list = await getStoredProblems();
+            const filtered = list.filter((p) => p.id !== existing.id);
+            await saveStoredProblems(filtered);
+            render();
+          }
+        });
+      } else {
+        // Not tracked: Show Add Form
+        panel.innerHTML = `
+          <div class="panel-header">
+            <div class="title-row">
+              <span>🧠 艾宾浩斯复习计划</span>
+            </div>
+            <div style="display: flex; gap: 4px;">
+              <span class="badge ${meta.difficulty.toLowerCase()}">${meta.difficulty}</span>
+              <span class="badge">#${meta.number}</span>
+            </div>
+          </div>
+
+          <div style="font-weight: 600; font-size: 12px; margin-bottom: 6px; color: #f1f5f9;">
+            ${meta.title}
+          </div>
+
+          <p style="color: #94a3b8; font-size: 11px; margin-bottom: 8px; line-height: 1.4;">
+            将此题纳入间隔重复复习库。明天起将按照艾宾浩斯遗忘曲线（1d ➔ 2d ➔ 4d ➔ 7d...）准时提醒您二刷三刷！
+          </p>
+
+          <textarea id="capsule-notes-input" class="textarea-notes" placeholder="记录核心破局思路或易错点卡片 (选填)..."></textarea>
+
+          <button id="capsule-submit-add" class="add-action-btn">
+            <span>🚀 纳入艾宾浩斯复习计划</span>
+          </button>
+        `;
+
+        panel.querySelector('#capsule-submit-add')?.addEventListener('click', async () => {
+          const textarea = panel.querySelector('#capsule-notes-input') as HTMLTextAreaElement;
+          const notes = textarea ? textarea.value.trim() : '';
+
+          const newProblem: Problem = {
+            id: `lc-${meta.slug || Date.now()}`,
+            number: meta.number || '0',
+            title: meta.title || meta.slug,
+            slug: meta.slug,
+            url: window.location.href,
+            difficulty: meta.difficulty,
+            tags: meta.tags,
+            notes,
+            createdAt: Date.now(),
+            repetition: 0,
+            interval: 1, // 1st stage
+            easeFactor: 2.5,
+            nextReviewDate: getTodayString(), // due today or tomorrow
+            isSample: false,
+            history: [],
           };
 
           const list = await getStoredProblems();
-          const idx = list.findIndex((p) => p.id === existing.id);
-          if (idx >= 0) list[idx] = updated;
+          list.unshift(newProblem);
           await saveStoredProblems(list);
-          updateView();
+          render();
         });
-      });
-    } else {
-      // Not tracked yet
-      container.innerHTML = `
-        <div class="header">
-          <div class="brand">
-            <span>🧠 艾宾浩斯复习</span>
-          </div>
-          <span class="badge">未纳入</span>
-        </div>
-        <div class="info">
-          将 <strong>${meta.title || meta.slug}</strong> 纳入间隔重复计划。
-        </div>
-        <input type="text" id="capsule-notes" class="notes-input" placeholder="可记录一两句核心破局思路..." />
-        <button id="capsule-add-btn" class="btn-add">
-          <span>+ 纳入艾宾浩斯复习</span>
-        </button>
-      `;
+      }
 
-      const addBtn = container.querySelector('#capsule-add-btn');
-      addBtn?.addEventListener('click', async () => {
-        const input = container.querySelector('#capsule-notes') as HTMLInputElement;
-        const notes = input ? input.value.trim() : '';
-
-        const newProblem: Problem = {
-          id: `lc-${meta.slug}`,
-          number: meta.number || '0',
-          title: meta.title || meta.slug,
-          slug: meta.slug,
-          url: window.location.href,
-          difficulty: meta.difficulty,
-          tags: ['力扣'],
-          notes,
-          createdAt: Date.now(),
-          repetition: 0,
-          interval: 1,
-          easeFactor: 2.5,
-          nextReviewDate: getTodayString(), // due today
-          history: [],
-        };
-
-        const list = await getStoredProblems();
-        list.unshift(newProblem);
-        await saveStoredProblems(list);
-        updateView();
-      });
+      wrapper.appendChild(panel);
     }
   }
 
-  updateView();
-  // Poll title in case LeetCode client-side router changes page
+  render();
+
+  // Watch for LeetCode Single Page App client-side route changes
   let lastUrl = window.location.href;
   setInterval(() => {
     if (window.location.href !== lastUrl) {
       lastUrl = window.location.href;
-      updateView();
+      render();
     }
-  }, 2000);
+  }, 1200);
 }
 
-// Initialize when ready
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', renderFloatingWidget);
+  document.addEventListener('DOMContentLoaded', initCapsule);
 } else {
-  renderFloatingWidget();
+  initCapsule();
 }

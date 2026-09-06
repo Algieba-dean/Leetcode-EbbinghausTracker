@@ -1,21 +1,20 @@
 import { Problem, UserSettings, ReviewGrade, DailySummary } from '../types';
-import { calculateSM2, getTodayString, diffDays, calculateRetentionRate } from './ebbinghaus';
+import { calculateSM2, getTodayString, diffDays, calculateRetentionRate, DEFAULT_EBBINGHAUS_LADDER } from './ebbinghaus';
 
 const STORAGE_KEY_PROBLEMS = 'lc_ebbinghaus_problems';
 const STORAGE_KEY_SETTINGS = 'lc_ebbinghaus_settings';
 
-const DEFAULT_SETTINGS: UserSettings = {
+export const DEFAULT_SETTINGS: UserSettings = {
   dailyTarget: 8,
   showLeetCodeFloatingWidget: true,
   theme: 'dark',
+  ladder: DEFAULT_EBBINGHAUS_LADDER,
 };
 
-// Check if chrome.storage is available
 function isChromeStorageAvailable(): boolean {
   return typeof chrome !== 'undefined' && !!chrome.storage?.local;
 }
 
-// Storage primitives
 async function getItem<T>(key: string, defaultValue: T): Promise<T> {
   if (isChromeStorageAvailable()) {
     return new Promise((resolve) => {
@@ -49,18 +48,16 @@ async function setItem<T>(key: string, value: T): Promise<void> {
   }
 }
 
-// Trigger background badge update
 export function notifyBadgeUpdate(): void {
   if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
     try {
       chrome.runtime.sendMessage({ type: 'UPDATE_BADGE' });
     } catch {
-      // Ignore in popup contexts if background isn't ready
+      // Ignore in background
     }
   }
 }
 
-// Initial realistic seed problems for immediate testing
 export const INITIAL_SAMPLE_PROBLEMS: Problem[] = [
   {
     id: 'lc-206',
@@ -71,32 +68,14 @@ export const INITIAL_SAMPLE_PROBLEMS: Problem[] = [
     difficulty: 'Easy',
     tags: ['链表', '双指针', '递归'],
     notes: '注意双指针迭代法中的 prev 初始化为 null，curr 指向 head。临时保存 curr.next。',
-    createdAt: Date.now() - 1000 * 60 * 60 * 24 * 5,
-    repetition: 2,
-    interval: 3,
+    createdAt: Date.now() - 1000 * 60 * 60 * 24 * 7,
+    repetition: 2, // 处于阶梯第3阶 (4天)
+    interval: 4,
     easeFactor: 2.5,
-    nextReviewDate: getTodayString(), // 今日待复习
-    lastReviewedDate: '2026-09-03',
-    history: [
-      {
-        id: 'log-1',
-        timestamp: Date.now() - 1000 * 60 * 60 * 24 * 5,
-        date: '2026-09-01',
-        grade: 3,
-        intervalDays: 1,
-        repetition: 1,
-        easeFactor: 2.5,
-      },
-      {
-        id: 'log-2',
-        timestamp: Date.now() - 1000 * 60 * 60 * 24 * 3,
-        date: '2026-09-03',
-        grade: 3,
-        intervalDays: 3,
-        repetition: 2,
-        easeFactor: 2.5,
-      },
-    ],
+    nextReviewDate: getTodayString(),
+    lastReviewedDate: '2026-09-02',
+    isSample: true,
+    history: [],
   },
   {
     id: 'lc-15',
@@ -107,12 +86,13 @@ export const INITIAL_SAMPLE_PROBLEMS: Problem[] = [
     difficulty: 'Medium',
     tags: ['数组', '双指针', '排序'],
     notes: '先整体排序！外层固定 i，内层左右双指针。必须特别注意 i, left, right 的去重逻辑！',
-    createdAt: Date.now() - 1000 * 60 * 60 * 24 * 4,
-    repetition: 1,
-    interval: 1,
-    easeFactor: 2.35,
-    nextReviewDate: getTodayString(), // 今日待复习
-    lastReviewedDate: '2026-09-05',
+    createdAt: Date.now() - 1000 * 60 * 60 * 24 * 3,
+    repetition: 1, // 处于第2阶 (2天)
+    interval: 2,
+    easeFactor: 2.5,
+    nextReviewDate: getTodayString(),
+    lastReviewedDate: '2026-09-04',
+    isSample: true,
     history: [],
   },
   {
@@ -124,12 +104,13 @@ export const INITIAL_SAMPLE_PROBLEMS: Problem[] = [
     difficulty: 'Hard',
     tags: ['双指针', '单调栈', '动态规划'],
     notes: '双指针法最优：leftMax 和 rightMax，维护较小的一侧向中间推进。',
-    createdAt: Date.now() - 1000 * 60 * 60 * 24 * 6,
+    createdAt: Date.now() - 1000 * 60 * 60 * 24 * 8,
     repetition: 1,
     interval: 2,
     easeFactor: 2.2,
-    nextReviewDate: '2026-09-05', // 超期 1 天！
+    nextReviewDate: '2026-09-05', // 超期 1 天
     lastReviewedDate: '2026-09-03',
+    isSample: true,
     history: [],
   },
   {
@@ -141,12 +122,13 @@ export const INITIAL_SAMPLE_PROBLEMS: Problem[] = [
     difficulty: 'Easy',
     tags: ['哈希表', '数组'],
     notes: 'HashMap 边查边存，空间换时间 O(N)。',
-    createdAt: Date.now() - 1000 * 60 * 60 * 24 * 10,
-    repetition: 4,
-    interval: 14,
+    createdAt: Date.now() - 1000 * 60 * 60 * 24 * 15,
+    repetition: 4, // 处于第5阶 (15天)
+    interval: 15,
     easeFactor: 2.8,
-    nextReviewDate: '2026-09-18', // 未来复习
-    lastReviewedDate: '2026-09-04',
+    nextReviewDate: '2026-09-20',
+    lastReviewedDate: '2026-09-05',
+    isSample: true,
     history: [],
   },
 ];
@@ -154,7 +136,6 @@ export const INITIAL_SAMPLE_PROBLEMS: Problem[] = [
 export async function getProblems(): Promise<Problem[]> {
   const problems = await getItem<Problem[]>(STORAGE_KEY_PROBLEMS, []);
   if (problems.length === 0) {
-    // Auto seed on initial empty launch
     await setItem(STORAGE_KEY_PROBLEMS, INITIAL_SAMPLE_PROBLEMS);
     notifyBadgeUpdate();
     return INITIAL_SAMPLE_PROBLEMS;
@@ -181,13 +162,27 @@ export async function deleteProblem(id: string): Promise<void> {
   notifyBadgeUpdate();
 }
 
+export async function clearSampleProblems(): Promise<void> {
+  const list = await getProblems();
+  const filtered = list.filter((p) => !p.isSample);
+  await setItem(STORAGE_KEY_PROBLEMS, filtered);
+  notifyBadgeUpdate();
+}
+
+export async function clearAllProblems(): Promise<void> {
+  await setItem(STORAGE_KEY_PROBLEMS, []);
+  notifyBadgeUpdate();
+}
+
 export async function recordReview(problemId: string, grade: ReviewGrade): Promise<Problem | null> {
   const list = await getProblems();
   const target = list.find((p) => p.id === problemId);
   if (!target) return null;
 
+  const settings = await getSettings();
+  const ladder = settings.ladder || DEFAULT_EBBINGHAUS_LADDER;
   const todayStr = getTodayString();
-  const update = calculateSM2(target, grade, todayStr);
+  const update = calculateSM2(target, grade, todayStr, ladder);
 
   const reviewLog = {
     id: `log-${Date.now()}`,
@@ -240,7 +235,6 @@ export function computeDailySummary(problems: Problem[]): DailySummary {
       completedToday += 1;
     }
 
-    // Due logic: nextReviewDate <= today, and not already reviewed today
     if (p.nextReviewDate <= todayStr && !isReviewedToday) {
       totalDue += 1;
       if (diffDays(todayStr, p.nextReviewDate) > 0) {
@@ -259,7 +253,7 @@ export function computeDailySummary(problems: Problem[]): DailySummary {
     overdueCount,
     totalTracked,
     retentionRate: avgRetention,
-    streakDays: 7, // Calculated from history or default to active streak
+    streakDays: 7,
   };
 }
 

@@ -1,18 +1,22 @@
 import React, { useState } from 'react';
 import { Problem, ReviewGrade } from '../types';
 import { GRADE_CONFIG, calculateRetentionRate, diffDays, getTodayString } from '../utils/ebbinghaus';
-import { ExternalLink, Lightbulb, ChevronDown, ChevronUp, Sparkles, Check } from 'lucide-react';
+import { ExternalLink, Lightbulb, ChevronDown, ChevronUp, Sparkles, Check, Trash2 } from 'lucide-react';
 
 interface ProblemCardProps {
   problem: Problem;
   onRate: (id: string, grade: ReviewGrade) => void;
+  onDelete?: (id: string) => void;
   showActions?: boolean;
+  ladder?: number[];
 }
 
 export const ProblemCard: React.FC<ProblemCardProps> = ({
   problem,
   onRate,
+  onDelete,
   showActions = true,
+  ladder,
 }) => {
   const [showNotes, setShowNotes] = useState(false);
   const [ratedGrade, setRatedGrade] = useState<ReviewGrade | null>(null);
@@ -45,7 +49,7 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
 
   return (
     <article
-      className={`rounded-lg bg-slate-900 border transition-all duration-300 overflow-hidden ${
+      className={`rounded-lg bg-slate-900 border transition-all duration-300 overflow-hidden relative group ${
         ratedGrade ? 'opacity-40 scale-98 pointer-events-none' : 'hover:border-slate-700'
       } ${isOverdue ? 'border-amber-500/30 shadow-sm' : 'border-slate-800'}`}
     >
@@ -57,11 +61,11 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
             </span>
             <button
               onClick={openLeetCode}
-              className="text-xs font-semibold text-slate-100 hover:text-emerald-400 transition-colors text-left flex items-center gap-1 group"
+              className="text-xs font-semibold text-slate-100 hover:text-emerald-400 transition-colors text-left flex items-center gap-1 group/btn"
               title="在力扣中打开"
             >
               <span>{problem.title}</span>
-              <ExternalLink className="w-3 h-3 text-slate-500 group-hover:text-emerald-400 transition-colors" />
+              <ExternalLink className="w-3 h-3 text-slate-500 group-hover/btn:text-emerald-400 transition-colors" />
             </button>
           </div>
 
@@ -83,6 +87,20 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
                 今日到期
               </span>
             )}
+
+            {onDelete && (
+              <button
+                onClick={() => {
+                  if (confirm(`确定从艾宾浩斯复习库中删除题目 #${problem.number} ${problem.title} 吗？`)) {
+                    onDelete(problem.id);
+                  }
+                }}
+                className="opacity-0 group-hover:opacity-100 p-1 text-slate-500 hover:text-rose-400 transition-all rounded"
+                title="删除此题"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         </div>
 
@@ -93,12 +111,17 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
                 {tag}
               </span>
             ))}
+            {problem.isSample && (
+              <span className="px-1 py-0.2 rounded bg-slate-800 text-slate-400 text-[9px] border border-slate-700/50">
+                示例
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-2 font-mono text-[10px] text-slate-400">
-            <span>第 <strong className="text-slate-200">{problem.repetition + 1}</strong> 轮</span>
+            <span>阶段 <strong className="text-slate-200">第 {problem.repetition + 1} 阶</strong></span>
             <span>·</span>
-            <span>当前间隔 <strong className="text-slate-200">{problem.interval}d</strong></span>
+            <span>间隔 <strong className="text-slate-200">{problem.interval}d</strong></span>
             <span>·</span>
             <span title="预估记忆强度">
               留存 <strong className={retention > 70 ? 'text-emerald-400' : retention > 40 ? 'text-amber-400' : 'text-rose-400'}>{retention}%</strong>
@@ -132,14 +155,14 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({
         <div className="bg-slate-950/90 px-3 py-2 border-t border-slate-800 flex items-center justify-between gap-1.5 select-none">
           <span className="text-[10px] text-slate-400 font-medium shrink-0 flex items-center gap-1">
             <Sparkles className="w-3 h-3 text-slate-500" />
-            评定反馈:
+            掌握度反馈:
           </span>
 
           <div className="grid grid-cols-4 gap-1.5 flex-1">
             {([1, 2, 3, 4] as ReviewGrade[]).map((grade) => {
               const meta = GRADE_CONFIG[grade];
               const isSelected = ratedGrade === grade;
-              const nextDays = meta.nextDaysText(problem.interval, problem.easeFactor, problem.repetition);
+              const nextDays = meta.getNextDays(problem.repetition, problem.interval, ladder);
 
               const gradeColors = {
                 1: 'hover:bg-rose-500/20 hover:text-rose-200 text-rose-300 border-rose-500/30 bg-rose-500/10',
